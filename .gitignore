@@ -1,0 +1,47 @@
+# ==========================================
+# SENSITIVE FILES (API Keys & Secrets)
+# ==========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ==========================================
+# DEPENDENCIES
+# ==========================================
+node_modules/
+.pnp
+.pnp.js
+
+# ==========================================
+# BUILD & PRODUCTION OUTPUTS
+# ==========================================
+dist/
+build/
+.next/
+out/
+public/build/
+
+# ==========================================
+# LOGS & SYSTEM FILES
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# EDITORS & IDE CONFIGS
+# ==========================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

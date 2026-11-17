@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Dark is the default. Adding the "light" class on <html> switches to light mode. */
+@custom-variant light (&:where(.light, .light *));
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
