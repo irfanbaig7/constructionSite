@@ -5,7 +5,7 @@ import Thumb from "@/components/ui/Thumb";
 import { card } from "@/lib/styles";
 import { formatDate } from "@/lib/date";
 
-export default function ProjectHeader({ project }) {
+export default function ProjectHeader({ project, onAddUpdate, onEdit }) {
     return (
         <div className={`rounded-2xl p-5 ${card}`}>
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -25,8 +25,8 @@ export default function ProjectHeader({ project }) {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <PrimaryButton>+ Add Daily Update</PrimaryButton>
-                    <PrimaryButton variant="outline">Edit</PrimaryButton>
+                    <PrimaryButton onClick={onAddUpdate}>+ Add Daily Update</PrimaryButton>
+                    <PrimaryButton variant="outline" onClick={onEdit}>Edit</PrimaryButton>
                 </div>
             </div>
             <div className="mt-5">

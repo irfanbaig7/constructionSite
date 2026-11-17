@@ -6,3 +6,5 @@ export function formatDate(iso) {
 export function isToday(iso) {
     return new Date(iso).toDateString() === new Date().toDateString();
 }
+
+export const todayKey = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD (local)

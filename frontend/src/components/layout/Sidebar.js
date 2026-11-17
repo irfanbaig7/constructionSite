@@ -26,15 +26,17 @@ export default function Sidebar({ role, open, onClose }) {
 
                 <nav className="mt-4 flex-1 space-y-1">
                     {items.map((item) => {
-                        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                        const active =
+                            (pathname === item.href || pathname.startsWith(`${item.href}/`)) &&
+                            !item.excludes?.some((p) => pathname.startsWith(p));
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 onClick={onClose}
                                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${active
-                                        ? "bg-orange-500 text-white light:text-white"
-                                        : "hover:bg-white/10 light:hover:bg-slate-100"
+                                    ? "bg-orange-500 text-white light:text-white"
+                                    : "hover:bg-white/10 light:hover:bg-slate-100"
                                     }`}
                             >
                                 <span className="text-base">{item.icon}</span>

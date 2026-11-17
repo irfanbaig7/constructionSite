@@ -1,11 +1,14 @@
 // Mock service. When the backend is ready, only this file changes.
-import { projects } from "@/data/projects";
-import { projectDetails } from "@/data/projectDetails";
-import { workers } from "@/data/workers";
-
-const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
+import { getProjects, getAllDetails } from "@/services/projectService";
+import { getWorkers } from "@/services/workerService";
+import { getTodayAttendance } from "@/services/attendanceService";
 
 export async function getDashboardData() {
-    await delay();
-    return { projects, workers, details: projectDetails };
+    const [projects, details, workers, attendance] = await Promise.all([
+        getProjects(),
+        getAllDetails(),
+        getWorkers(),
+        getTodayAttendance(),
+    ]);
+    return { projects, workers, details, attendance };
 }

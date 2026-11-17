@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/date";
 import { formatINRFull, sumAmount } from "@/lib/money";
 import { expenseCategories } from "@/config/expenseCategories";
 
-export default function SiteExpensesTab({ expenses }) {
+export default function SiteExpensesTab({ expenses, onAdd }) {
     const [filter, setFilter] = useState("All");
 
     const list = filter === "All" ? expenses : expenses.filter((e) => e.category === filter);
@@ -21,7 +21,7 @@ export default function SiteExpensesTab({ expenses }) {
                     <p className="text-sm">{filter === "All" ? "Total Site Expenses" : `${filter} total`}</p>
                     <p className="text-3xl font-bold">{formatINRFull(sumAmount(list))}</p>
                 </div>
-                <PrimaryButton>+ Add Expense</PrimaryButton>
+                <PrimaryButton onClick={onAdd}>+ Add Expense</PrimaryButton>
             </div>
 
             <p className="text-sm">🔒 Private: only you can see these expenses. The homeowner cannot.</p>
@@ -33,8 +33,8 @@ export default function SiteExpensesTab({ expenses }) {
                         type="button"
                         onClick={() => setFilter(name)}
                         className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filter === name
-                                ? "border-orange-500 bg-orange-500/10 text-orange-500"
-                                : "border-white/15 hover:border-orange-500 light:border-slate-300"
+                            ? "border-orange-500 bg-orange-500/10 text-orange-500"
+                            : "border-white/15 hover:border-orange-500 light:border-slate-300"
                             }`}
                     >
                         {name}

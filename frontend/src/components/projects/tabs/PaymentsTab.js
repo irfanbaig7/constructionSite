@@ -7,7 +7,7 @@ import { formatINR } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { formatINRFull, sumAmount } from "@/lib/money";
 
-export default function PaymentsTab({ project, payments }) {
+export default function PaymentsTab({ project, payments, onAdd }) {
     const received = sumAmount(payments);
     const pending = project.budget - received;
     const percent = Math.round((received / project.budget) * 100);
@@ -27,7 +27,7 @@ export default function PaymentsTab({ project, payments }) {
 
             <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold">Payments from {project.owner}</h2>
-                <PrimaryButton>+ Add Payment</PrimaryButton>
+                <PrimaryButton onClick={onAdd}>+ Add Payment</PrimaryButton>
             </div>
 
             {payments.length === 0 ? (
