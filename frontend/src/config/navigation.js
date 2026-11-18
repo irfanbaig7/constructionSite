@@ -8,7 +8,6 @@ export const navigation = {
     ],
     homeowner: [
         { label: "Home", href: "/homeowner/dashboard", icon: "🏠" },
-        { label: "My Projects", href: "/contractor/projects", icon: "🏗️", excludes: ["/contractor/projects/new"] },
         { label: "Notifications", href: "/homeowner/notifications", icon: "🔔" },
         { label: "Profile", href: "/homeowner/profile", icon: "👤" },
     ],

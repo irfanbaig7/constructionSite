@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function Modal({ title, onClose, children }) {
+    const closeRef = useRef(onClose);
     useEffect(() => {
-        const onKey = (e) => e.key === "Escape" && onClose();
+        closeRef.current = onClose;
+    });
+
+    useEffect(() => {
+        const onKey = (e) => e.key === "Escape" && closeRef.current();
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
-    }, [onClose]);
+    }, []);
 
     return (
         <div

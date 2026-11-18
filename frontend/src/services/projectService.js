@@ -68,20 +68,6 @@ export async function addExpense(id, { category, title, date, amount }) {
     mutate(id, (x) => ({ ...x, expenses: [{ id: uid("e"), category, title: title.trim(), date, amount: Number(amount) }, ...x.expenses] }));
 }
 
-// export async function addUpdate(id, { summary, workerIds, photos, materials }) {
-//     const update = {
-//         id: uid("u"),
-//         at: new Date().toISOString(),
-//         summary: summary.trim(),
-//         workers: workerIds.length,
-//         workerIds,
-//         photos, // array of data URLs (old sample data has a number here)
-//         materials: materials.split(",").map((m) => m.trim()).filter(Boolean),
-//     };
-//     mutate(id, (x) => ({ ...x, updates: [update, ...x.updates] }));
-// }
-
-
 // Add a new material or replace an existing one (matched by name).
 
 export async function saveMaterial(id, material) {

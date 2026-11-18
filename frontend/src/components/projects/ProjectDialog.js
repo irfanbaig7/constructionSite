@@ -2,7 +2,8 @@
 
 import FormDialog from "@/components/ui/FormDialog";
 import { expenseCategories } from "@/config/expenseCategories";
-import { addPayment, addExpense, addUpdate, saveMaterial, editProject } from "@/services/projectService";
+import { addPayment, addExpense, saveMaterial, editProject } from "@/services/projectService";
+import DailyUpdateDialog from "./DailyUpdateDialog";
 import { sumAmount, formatINRFull } from "@/lib/money";
 import { todayKey } from "@/lib/date";
 
@@ -20,21 +21,7 @@ export default function ProjectDialog({ dialog, data, onClose, onSaved }) {
 
     switch (dialog.type) {
         case "update":
-            return (
-                <FormDialog
-                    title="Add daily update"
-                    submitLabel="Post update"
-                    onClose={onClose}
-                    fields={[
-                        { name: "summary", label: "What work was done today?", as: "textarea", rows: 3, required: true, span: true, placeholder: "e.g. Slab shuttering completed" },
-                        { name: "workers", label: "Workers present", type: "number", min: "0", required: true },
-                        { name: "photos", label: "Photos taken (optional)", type: "number", min: "0", placeholder: "0" },
-                        { name: "materials", label: "Materials used (optional, comma separated)", placeholder: "Cement 50 bags, Steel 400 kg", span: true },
-                    ]}
-                    validate={(f) => (n(f.workers) < 0 || n(f.photos) < 0 ? "Numbers cannot be negative." : "")}
-                    onSubmit={save((f) => addUpdate(id, f))}
-                />
-            );
+            return <DailyUpdateDialog projectId={id} onClose={onClose} onSaved={onSaved} />;
 
         case "payment":
             return (
