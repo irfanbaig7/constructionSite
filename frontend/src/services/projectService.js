@@ -68,23 +68,53 @@ export async function addExpense(id, { category, title, date, amount }) {
     mutate(id, (x) => ({ ...x, expenses: [{ id: uid("e"), category, title: title.trim(), date, amount: Number(amount) }, ...x.expenses] }));
 }
 
-export async function addUpdate(id, { summary, workerIds, photos, materials }) {
-    const update = {
-        id: uid("u"),
-        at: new Date().toISOString(),
-        summary: summary.trim(),
-        workers: workerIds.length,
-        workerIds,
-        photos, // array of data URLs (old sample data has a number here)
-        materials: materials.split(",").map((m) => m.trim()).filter(Boolean),
-    };
-    mutate(id, (x) => ({ ...x, updates: [update, ...x.updates] }));
-}
+// export async function addUpdate(id, { summary, workerIds, photos, materials }) {
+//     const update = {
+//         id: uid("u"),
+//         at: new Date().toISOString(),
+//         summary: summary.trim(),
+//         workers: workerIds.length,
+//         workerIds,
+//         photos, // array of data URLs (old sample data has a number here)
+//         materials: materials.split(",").map((m) => m.trim()).filter(Boolean),
+//     };
+//     mutate(id, (x) => ({ ...x, updates: [update, ...x.updates] }));
+// }
+
+
 // Add a new material or replace an existing one (matched by name).
+
 export async function saveMaterial(id, material) {
     mutate(id, (x) => ({ ...x, materials: [...x.materials.filter((m) => m.name !== material.name), material] }));
 }
 
 export async function editProject(id, patch) {
     mutate(id, (x) => ({ ...x, project: { ...x.project, ...patch } }));
+}
+
+export async function getProjectsForOwner(email) {
+    const list = await getProjects();
+    return list.filter((p) => p.ownerEmail?.toLowerCase() === email.toLowerCase());
+}
+
+// Same as getProjectDetails but WITHOUT the contractor's private site expenses.
+export async function getOwnerProjectDetails(id) {
+    const d = await getProjectDetails(id);
+    if (!d) return null;
+    const { expenses: _private, ...safe } = d;
+    return safe;
+}
+
+export async function addUpdate(id, { summary, workerIds, photos, materials, delivered }) {
+    const update = {
+        id: uid("u"),
+        at: new Date().toISOString(),
+        summary: summary.trim(),
+        workers: workerIds.length,
+        workerIds,
+        photos,
+        materials: materials.split(",").map((m) => m.trim()).filter(Boolean),
+        delivered: (delivered ?? "").trim(), // new material received today (optional)
+    };
+    mutate(id, (x) => ({ ...x, updates: [update, ...x.updates] }));
 }

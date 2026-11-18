@@ -13,6 +13,9 @@ export const projects = [
         budget: 1500000,
         startDate: "2026-08-25",
         expectedEnd: "2027-01-15",
+        ownerEmail: "homeowner@siteproof.com",
+        contractor: "Irfan Baig",
+        contractorPhone: "9800000000",
         milestones: [
             { name: "Foundation", status: "done" },
             { name: "Ground Floor", status: "done" },

@@ -20,6 +20,8 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
 
+    const [delivered, setDelivered] = useState("");
+
     useEffect(() => {
         Promise.all([getWorkers(), getTodayAttendance()]).then(([w, a]) => {
             setWorkers(w);
@@ -47,7 +49,7 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
         if (selected.length === 0) return setError("Tick at least 1 worker who was present.");
         setBusy(true);
         try {
-            await addUpdate(projectId, { summary, workerIds: selected, photos, materials });
+            await addUpdate(projectId, { summary, workerIds: selected, photos, materials, delivered });
             onSaved();
             onClose();
         } catch {
@@ -120,6 +122,11 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
 
                 <Field label="Materials used (optional, comma separated)" name="materials"
                     value={materials} onChange={(e) => setMaterials(e.target.value)} placeholder="Cement 50 bags, Steel 400 kg" />
+
+
+                <Field label="New material received today (optional)" name="delivered"
+                    value={delivered} onChange={(e) => setDelivered(e.target.value)} placeholder="e.g. Sand 6 tons" />
+
 
                 <div className="flex gap-3">
                     <button type="submit" disabled={busy} className="rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
