@@ -8,6 +8,7 @@ import Field from "@/components/ui/Field";
 import { card, inputClass } from "@/lib/styles";
 import { formatINRFull } from "@/lib/money";
 import { formatDate } from "@/lib/date";
+import { createProject } from "@/services/projectService";
 
 const types = [
     "Residential House",
@@ -83,6 +84,7 @@ export default function NewProjectView() {
     const [selected, setSelected] = useState(["Foundation", "Ground Floor", "First Floor", "Finishing"]);
     const [error, setError] = useState("");
     const [saved, setSaved] = useState(null);
+    const [saving, setSaving] = useState(false);
 
     const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -92,7 +94,7 @@ export default function NewProjectView() {
         setSelected((s) => (s.includes(name) ? s : [...s, name]));
     };
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         setError("");
         const budget = Number(form.budget);
@@ -103,8 +105,16 @@ export default function NewProjectView() {
         if (form.expectedEnd <= form.startDate) return setError("Expected end date must be after the start date.");
         if (!/^\d{10}$/.test(form.ownerPhone.replace(/\s/g, ""))) return setError("Enter a 10 digit phone number.");
 
-        // Not stored anywhere (as requested). Backend call goes here later.
-        setSaved({ ...form, budget, advance, milestones: options.filter((o) => selected.includes(o)) });
+        setSaving(true);
+        try {
+            const milestones = options.filter((o) => selected.includes(o));
+            await createProject({ ...form, budget, advance, milestones });
+            setSaved({ ...form, budget, advance, milestones });
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSaving(false);
+        }
     }
 
     function reset() {

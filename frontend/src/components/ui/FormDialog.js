@@ -10,14 +10,22 @@ export default function FormDialog({ title, fields, initial = {}, submitLabel = 
         Object.fromEntries(fields.map((f) => [f.name, initial[f.name] ?? f.defaultValue ?? ""]))
     );
     const [error, setError] = useState("");
+    const [busy, setBusy] = useState(false);
     const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
     async function submit(e) {
         e.preventDefault();
+        setError("");
         const msg = validate?.(form);
         if (msg) return setError(msg);
-        await onSubmit(form);
-        onClose();
+        setBusy(true);
+        try {
+            await onSubmit(form);
+            onClose();
+        } catch (err) {
+            setError(err.message);
+            setBusy(false);
+        }
     }
 
     return (
@@ -44,8 +52,8 @@ export default function FormDialog({ title, fields, initial = {}, submitLabel = 
                     ))}
                 </div>
                 <div className="flex gap-3">
-                    <button type="submit" className="rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600">
-                        {submitLabel}
+                    <button type="submit" disabled={busy} className="rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
+                        {busy ? "Saving..." : submitLabel}
                     </button>
                     <button
                         type="button"

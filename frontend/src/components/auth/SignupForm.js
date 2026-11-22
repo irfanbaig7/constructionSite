@@ -25,9 +25,11 @@ export default function SignupForm() {
         setLoading(true);
         try {
             const user = await signup(form);
+            setForm({ name: "", email: "", password: "", role: "contractor" });
             router.push(dashboardFor(user.role));
         } catch (err) {
             setError(err.message);
+        } finally {
             setLoading(false);
         }
     }

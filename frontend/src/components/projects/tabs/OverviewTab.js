@@ -10,10 +10,10 @@ const milestoneStyle = {
     pending: { icon: "⚪", label: "Pending" },
 };
 
-export default function OverviewTab({ project, payments, expenses }) {
+export default function OverviewTab({ project, payments, expenses, workerPayments }) {
     const received = sumAmount(payments);
     const pending = project.budget - received;
-    const siteExpenses = sumAmount(expenses);
+    const siteExpenses = sumAmount(expenses) + sumAmount(workerPayments);
 
     const info = [
         ["Owner", project.owner],
@@ -31,8 +31,7 @@ export default function OverviewTab({ project, payments, expenses }) {
                 <StatCard label="Progress" value={`${project.progress}%`} icon="📈" tone="blue" />
                 <StatCard label="Project Budget" value={formatINR(project.budget)} icon="💼" tone="purple" />
                 <StatCard label="Payments Pending" value={formatINR(pending)} icon="⏳" tone="orange" />
-                <StatCard label="Site Expenses" value={formatINR(siteExpenses)} icon="🧾" tone="green" />
-            </div>
+                <StatCard label="Mera kul kharcha" value={formatINR(siteExpenses)} icon="🧾" tone="green" hint="Site kharche + workers ka payment" />            </div>
 
             <div className="grid gap-6 xl:grid-cols-3">
                 <section className={`rounded-2xl p-5 xl:col-span-2 ${card}`}>

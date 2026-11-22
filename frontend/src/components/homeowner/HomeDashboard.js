@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import useSession from "@/hooks/useSession";
 import { getProjectsForOwner, getOwnerProjectDetails } from "@/services/projectService";
+import { getOwnerMaterials, getMaterialRequests } from "@/services/materialService";
+import { getPaymentRequests } from "@/services/paymentService";
 import { getEntries } from "@/services/ledgerService";
 import StatCard from "@/components/dashboard/StatCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import ProgressBar from "@/components/ui/ProgressBar";
 import EmptyState from "@/components/ui/EmptyState";
 import Thumb from "@/components/ui/Thumb";
+import MaterialRequests from "./MaterialRequests";
+import PaymentRequests from "./PaymentRequests";
 import { card, inputClass } from "@/lib/styles";
 import { formatINR, formatUpdateTime } from "@/lib/format";
 import { formatDate } from "@/lib/date";
@@ -27,16 +31,34 @@ export default function HomeDashboard() {
 
     useEffect(() => {
         if (!session) return;
-        getProjectsForOwner(session.email).then((list) => {
+        getProjectsForOwner().then((list) => {
             setProjects(list);
             setSelectedId(list[0]?.id ?? null);
         });
     }, [session]);
 
+    const load = useCallback(
+        () =>
+            selectedId
+                ? Promise.all([
+                    getOwnerProjectDetails(selectedId),
+                    getEntries(selectedId),
+                    getOwnerMaterials(selectedId),
+                    getMaterialRequests(selectedId),
+                    getPaymentRequests(selectedId),
+                ])
+                    .then(([d, e, m, r, pr]) => setView({ d, e, m, r, pr }))
+                    .catch(() => { })
+                : Promise.resolve(),
+        [selectedId]
+    );
+
+    // refresh every 30 seconds so new updates and requests show up
     useEffect(() => {
-        if (!selectedId) return;
-        Promise.all([getOwnerProjectDetails(selectedId), getEntries(selectedId)]).then(([d, e]) => setView({ d, e }));
-    }, [selectedId]);
+        load();
+        const t = setInterval(load, 30000);
+        return () => clearInterval(t);
+    }, [load]);
 
     if (!session || !projects) return <p>Loading...</p>;
 
@@ -49,6 +71,7 @@ export default function HomeDashboard() {
     if (!view || view.d?.project.id !== selectedId) return <p>Loading...</p>;
 
     const { project: p, payments, updates } = view.d;
+    const materials = view.m ?? [];
     const received = sumAmount(payments);
     const spent = received + sumAmount(view.e);
     const totalDays = Math.max(0, Math.round((new Date(p.expectedEnd) - new Date(p.startDate)) / DAY));
@@ -77,7 +100,10 @@ export default function HomeDashboard() {
                 </select>
             )}
 
-            {/* Daily work list: sabse upar */}
+            <PaymentRequests projectId={p.id} requests={view.pr ?? []} onChanged={load} />
+            <MaterialRequests projectId={p.id} requests={view.r ?? []} onChanged={load} />
+
+            {/* Daily work list */}
             <section className={`rounded-2xl p-5 ${card}`}>
                 <h2 className="text-lg font-bold">Roz ka kaam</h2>
                 {updates.length === 0 ? (
@@ -86,10 +112,7 @@ export default function HomeDashboard() {
                     <ul className="mt-4 max-h-96 divide-y divide-white/10 overflow-y-auto light:divide-slate-200">
                         {updates.map((u) => (
                             <li key={u.id}>
-                                <Link
-                                    href={`/homeowner/projects/${p.id}/updates/${u.id}`}
-                                    className="flex items-center justify-between gap-3 py-3 hover:text-orange-500"
-                                >
+                                <Link href={`/homeowner/update/${u.id}`} className="flex items-center justify-between gap-3 py-3 hover:text-orange-500">
                                     <div className="min-w-0">
                                         <p className="text-xs font-medium">{formatUpdateTime(u.at)}</p>
                                         <p className="truncate font-semibold">{shortTitle(u.summary)}</p>
@@ -104,7 +127,6 @@ export default function HomeDashboard() {
             </section>
 
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Project basic info */}
                 <section className={`rounded-2xl p-5 ${card}`}>
                     <div className="flex items-center gap-3">
                         <Thumb className="h-16 w-16" />
@@ -133,23 +155,50 @@ export default function HomeDashboard() {
                             </a>
                         </div>
                     )}
-
                 </section>
 
-                {/* Progress + money */}
                 <div className="space-y-4 lg:col-span-2">
                     <section className={`rounded-2xl p-5 ${card}`}>
                         <p className="mb-2 text-sm font-medium">Kaam kitna hua</p>
                         <ProgressBar value={p.progress} />
                     </section>
-                    <div className="grid gap-4 sm:grid-cols-3">
-                        <StatCard label="Abhi tak kharcha" value={formatINR(spent)} icon="🧾" tone="orange"
-                            href={`/homeowner/projects/${p.id}/expenses`} hint="Hisaab dekho / likho →" />
-                        <StatCard label="Budget" value={formatINR(p.budget)} icon="💼" tone="purple" />
-                        <StatCard label="Contractor ko dena baki" value={formatINR(p.budget - received)} icon="⏳" tone="blue" />
-                    </div>
+
+                    <section className={`rounded-2xl p-5 ${card}`}>
+                        <div className="flex flex-wrap items-end justify-between gap-2">
+                            <div>
+                                <p className="text-sm font-medium">Contractor ko diya</p>
+                                <p className="text-3xl font-bold">{formatINR(received)}</p>
+                            </div>
+                            <p className="text-sm">
+                                Budget {formatINR(p.budget)} • <span className="font-semibold">Baki {formatINR(p.budget - received)}</span>
+                            </p>
+                        </div>
+                        <div className="mt-3"><ProgressBar value={percent} /></div>
+                    </section>
+
+                    <StatCard label="Abhi tak kul kharcha" value={formatINR(spent)} icon="🧾" tone="orange"
+                        href={`/homeowner/expenses/${p.id}`} hint="Pura hisaab dekho / likho →" />
                 </div>
             </div>
+
+            <section className={`rounded-2xl p-5 ${card}`}>
+                <h2 className="text-lg font-bold">Material ka hisaab</h2>
+                {materials.length === 0 ? (
+                    <p className="mt-3 text-sm">Abhi koi material site par nahi aaya.</p>
+                ) : (
+                    <div className="mt-4 space-y-4">
+                        {materials.map((m) => (
+                            <div key={m.id}>
+                                <p className="text-sm font-semibold">
+                                    {m.name}: {m.used.toLocaleString("en-IN")} {m.unit} laga
+                                    {m.target > 0 && `, kul ${m.target.toLocaleString("en-IN")} ${m.unit} chahiye`}
+                                </p>
+                                {m.target > 0 && <ProgressBar value={Math.min(100, Math.round((m.used / m.target) * 100))} />}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
         </div>
     );
 }

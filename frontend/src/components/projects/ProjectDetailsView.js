@@ -12,13 +12,12 @@ import DailyUpdatesTab from "./tabs/DailyUpdatesTab";
 import MaterialsTab from "./tabs/MaterialsTab";
 import SiteExpensesTab from "./tabs/SiteExpensesTab";
 import PaymentsTab from "./tabs/PaymentsTab";
-import ReportsTab from "./tabs/ReportsTab";
 
 export default function ProjectDetailsView({ id }) {
     // undefined = loading, null = not found
     const [data, setData] = useState(undefined);
     const [tab, setTab] = useState("overview");
-    const [dialog, setDialog] = useState(null); // { type, material? }
+    const [dialog, setDialog] = useState(null);
 
     const load = useCallback(() => getProjectDetails(id).then(setData), [id]);
 
@@ -43,8 +42,8 @@ export default function ProjectDetailsView({ id }) {
         );
     }
 
-    const { project, payments, expenses, materials, updates } = data;
-    const open = (type, extra) => () => setDialog({ type, ...extra });
+    const { project, payments, expenses, materials, requests, workerPayments, paymentRequests, updates } = data;
+    const open = (type) => () => setDialog({ type });
 
     return (
         <div className="space-y-6">
@@ -52,15 +51,26 @@ export default function ProjectDetailsView({ id }) {
             <ProjectHeader project={project} onAddUpdate={open("update")} onEdit={open("edit")} />
             <ProjectTabs tabs={projectTabs} active={tab} onChange={setTab} />
 
-            {tab === "overview" && <OverviewTab project={project} payments={payments} expenses={expenses} />}
+            {tab === "overview" && (
+                <OverviewTab project={project} payments={payments} expenses={expenses} workerPayments={workerPayments} />
+            )}
             {tab === "updates" && <DailyUpdatesTab updates={updates} />}
             {tab === "materials" && (
-                <MaterialsTab materials={materials} onAdd={open("material")} onEdit={(m) => setDialog({ type: "stock", material: m })} />
+                <MaterialsTab projectId={project.id} materials={materials} requests={requests} onChanged={load} />
             )}
-            {tab === "expenses" && <SiteExpensesTab expenses={expenses} onAdd={open("expense")} />}
-            {tab === "payments" && <PaymentsTab project={project} payments={payments} onAdd={open("payment")} />}
-            {tab === "reports" && (
-                <ReportsTab project={project} payments={payments} expenses={expenses} materials={materials} />
+            {tab === "expenses" && (
+                <SiteExpensesTab projectId={project.id} expenses={expenses} onAdd={open("expense")} onChanged={load} />
+            )}
+            {tab === "payments" && (
+                <PaymentsTab
+                    project={project}
+                    payments={payments}
+                    paymentRequests={paymentRequests}
+                    workerPayments={workerPayments}
+                    onAdd={open("payment")}
+                    onAddWorker={open("workerPayment")}
+                    onChanged={load}
+                />
             )}
 
             <ProjectDialog dialog={dialog} data={data} onClose={() => setDialog(null)} onSaved={load} />

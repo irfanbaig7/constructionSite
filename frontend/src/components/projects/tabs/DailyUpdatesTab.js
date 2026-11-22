@@ -6,6 +6,7 @@ import Thumb from "@/components/ui/Thumb";
 import { card } from "@/lib/styles";
 import { formatUpdateTime } from "@/lib/format";
 import { getWorkers } from "@/services/workerService";
+import PhotoStrip from "@/components/ui/PhotoStrip";
 
 export default function DailyUpdatesTab({ updates }) {
     const [names, setNames] = useState({});
@@ -46,16 +47,13 @@ export default function DailyUpdatesTab({ updates }) {
                         </div>
                     )}
 
-                    {u.delivered && <p className="mt-3 text-sm font-semibold">🚚 Received: {u.delivered}</p>}
+                    {u.deliveries?.length > 0 && (
+                        <p className="mt-3 text-sm font-semibold">
+                            🚚 Naya material aaya: {u.deliveries.map((d) => `${d.name} ${d.quantity} ${d.unit} (${d.by === "owner" ? "homeowner laaye" : "aapne laaye"})`).join(", ")}
+                        </p>
+                    )}
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                        {Array.isArray(u.photos)
-                            ? u.photos.map((src, i) => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img key={i} src={src} alt={`Site photo ${i + 1}`} className="h-20 w-20 rounded-xl object-cover" />
-                            ))
-                            : Array.from({ length: u.photos || 0 }).map((_, i) => <Thumb key={i} icon="📷" className="h-16 w-16" />)}
-                    </div>
+                    <div className="mt-4"><PhotoStrip photos={u.photos} /></div>
                 </li>
             ))}
         </ul>

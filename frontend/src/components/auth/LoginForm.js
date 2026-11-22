@@ -6,10 +6,6 @@ import FormField from "./FormField";
 import { login } from "@/services/authService";
 import { dashboardFor } from "@/lib/routes";
 
-const demos = [
-    { label: "Use contractor demo", email: "contractor@siteproof.com", password: "contractor123" },
-    { label: "Use homeowner demo", email: "homeowner@siteproof.com", password: "homeowner123" },
-];
 
 export default function LoginForm() {
     const router = useRouter();
@@ -25,9 +21,11 @@ export default function LoginForm() {
         setLoading(true);
         try {
             const user = await login(form);
+            setForm({ email: "", password: "" });
             router.push(dashboardFor(user.role));
         } catch (err) {
             setError(err.message);
+        } finally {
             setLoading(false);
         }
     }
@@ -51,18 +49,6 @@ export default function LoginForm() {
                 {loading ? "Logging in..." : "Login →"}
             </button>
 
-            <div className="flex flex-wrap gap-2 pt-1">
-                {demos.map((d) => (
-                    <button
-                        key={d.label}
-                        type="button"
-                        onClick={() => setForm({ email: d.email, password: d.password })}
-                        className="rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium hover:border-orange-500 hover:text-orange-500 light:border-slate-300"
-                    >
-                        {d.label}
-                    </button>
-                ))}
-            </div>
         </form>
     );
 }

@@ -46,7 +46,7 @@ export default function WorkersView() {
 
             <PageHeader
                 title="Workers"
-                subtitle={workers ? `${workers.length} workers` : "Loading..."}
+                subtitle={workers ? `${workers.length} worker${workers.length === 1 ? "" : "s"}` : "Loading..."}
                 action={
                     !showForm && (
                         <button

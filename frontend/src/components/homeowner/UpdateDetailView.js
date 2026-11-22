@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getOwnerProjectDetails } from "@/services/projectService";
+import { getUpdate } from "@/services/projectService";
 import BackLink from "@/components/ui/BackLink";
-import Thumb from "@/components/ui/Thumb";
+import PhotoStrip from "@/components/ui/PhotoStrip";
 import { card } from "@/lib/styles";
 import { formatUpdateTime } from "@/lib/format";
 
@@ -16,17 +16,17 @@ function Block({ title, children }) {
     );
 }
 
-export default function UpdateDetailView({ id, updateId }) {
+export default function UpdateDetailView({ updateId }) {
     const [data, setData] = useState(undefined);
 
     useEffect(() => {
-        getOwnerProjectDetails(id).then(setData);
-    }, [id]);
+        getUpdate(updateId).then(setData).catch(() => setData(null));
+    }, [updateId]);
 
     const back = <BackLink href="/homeowner/dashboard">← Back to Project</BackLink>;
     if (data === undefined) return <p>Loading...</p>;
 
-    const u = data?.updates.find((x) => x.id === updateId);
+    const u = data?.update;
     if (!u) {
         return (
             <div className="space-y-4">
@@ -35,8 +35,6 @@ export default function UpdateDetailView({ id, updateId }) {
             </div>
         );
     }
-
-    const photos = Array.isArray(u.photos) ? u.photos : [];
 
     return (
         <div className="space-y-6">
@@ -47,23 +45,8 @@ export default function UpdateDetailView({ id, updateId }) {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-                {/* Photos */}
                 <Block title="Photos">
-                    {photos.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            {photos.map((src, i) => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img key={i} src={src} alt={`Site photo ${i + 1}`} className="aspect-[4/3] w-full rounded-xl object-cover" />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex gap-3">
-                            {Array.from({ length: u.photos || 0 }).map((_, i) => (
-                                <Thumb key={i} icon="📷" className="h-24 w-24" />
-                            ))}
-                            {!u.photos && <p className="text-sm">No photos.</p>}
-                        </div>
-                    )}
+                    <PhotoStrip photos={u.photos} size="h-28 w-28" />
                 </Block>
 
                 <div className="space-y-4">
@@ -92,6 +75,14 @@ export default function UpdateDetailView({ id, updateId }) {
                     {u.delivered && (
                         <Block title="Naya material aaya">
                             <p className="font-semibold">🚚 {u.delivered}</p>
+                        </Block>
+                    )}{u.deliveries?.length > 0 && (
+                        <Block title="Naya material aaya">
+                            <ul className="space-y-1 font-semibold">
+                                {u.deliveries.map((d, i) => (
+                                    <li key={i}>🚚 {d.name} {d.quantity} {d.unit} ({d.by === "owner" ? "aapne laaye" : "contractor ke through, payment ho chuka"})</li>
+                                ))}
+                            </ul>
                         </Block>
                     )}
                 </div>

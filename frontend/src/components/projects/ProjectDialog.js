@@ -2,17 +2,18 @@
 
 import FormDialog from "@/components/ui/FormDialog";
 import { expenseCategories } from "@/config/expenseCategories";
-import { addPayment, addExpense, saveMaterial, editProject } from "@/services/projectService";
-import DailyUpdateDialog from "./DailyUpdateDialog";
+import { addExpense, editProject } from "@/services/projectService";
+import { createPaymentRequest } from "@/services/paymentService";
 import { sumAmount, formatINRFull } from "@/lib/money";
 import { todayKey } from "@/lib/date";
+import DailyUpdateDialog from "./DailyUpdateDialog";
+import WorkerPaymentDialog from "./WorkerPaymentDialog";
 
 const n = Number;
-const units = ["bags", "pcs", "tons", "kg", "litres"];
 
 export default function ProjectDialog({ dialog, data, onClose, onSaved }) {
     if (!dialog) return null;
-    const { project, payments, materials } = data;
+    const { project, payments } = data;
     const id = project.id;
     const save = (fn) => async (f) => {
         await fn(f);
@@ -23,22 +24,25 @@ export default function ProjectDialog({ dialog, data, onClose, onSaved }) {
         case "update":
             return <DailyUpdateDialog projectId={id} onClose={onClose} onSaved={onSaved} />;
 
+        case "workerPayment":
+            return <WorkerPaymentDialog projectId={id} onClose={onClose} onSaved={onSaved} />;
+
         case "payment":
             return (
                 <FormDialog
-                    title="Add payment"
-                    submitLabel="Add payment"
+                    title="Homeowner se payment maango"
+                    submitLabel="Homeowner ko bhejo"
                     onClose={onClose}
                     fields={[
-                        { name: "label", label: "Label", placeholder: "e.g. 3rd installment", required: true, span: true },
+                        { name: "label", label: "Kis ke liye", placeholder: "e.g. 3rd installment (slab)", required: true, span: true },
                         { name: "amount", label: "Amount (₹)", type: "number", min: "1", required: true },
-                        { name: "date", label: "Date", type: "date", required: true, defaultValue: todayKey() },
+                        { name: "note", label: "Note (optional)", span: true },
                     ]}
                     validate={(f) => {
                         const left = project.budget - sumAmount(payments);
-                        return n(f.amount) > left ? `Amount is more than the pending ${formatINRFull(left)}.` : "";
+                        return n(f.amount) > left ? `Amount baki ${formatINRFull(left)} se zyada hai.` : "";
                     }}
-                    onSubmit={save((f) => addPayment(id, f))}
+                    onSubmit={save((f) => createPaymentRequest(id, { ...f, amount: n(f.amount) }))}
                 />
             );
 
@@ -49,58 +53,14 @@ export default function ProjectDialog({ dialog, data, onClose, onSaved }) {
                     submitLabel="Add expense"
                     onClose={onClose}
                     fields={[
-                        { name: "title", label: "Title", placeholder: "e.g. Sand delivery", required: true, span: true },
+                        { name: "title", label: "Kis cheez ka kharcha", placeholder: "e.g. Chai paani, drill machine", required: true, span: true },
                         { name: "category", label: "Category", options: expenseCategories.map((c) => c.name), defaultValue: expenseCategories[0].name },
                         { name: "amount", label: "Amount (₹)", type: "number", min: "1", required: true },
-                        { name: "date", label: "Date", type: "date", required: true, defaultValue: todayKey() },
+                        { name: "date", label: "Date", type: "date", required: true, defaultValue: todayKey(), span: true },
                     ]}
                     onSubmit={save((f) => addExpense(id, f))}
                 />
             );
-
-        case "material":
-            return (
-                <FormDialog
-                    title="Add material"
-                    submitLabel="Add material"
-                    onClose={onClose}
-                    fields={[
-                        { name: "name", label: "Material name", placeholder: "e.g. Cement", required: true },
-                        { name: "unit", label: "Unit", options: units, defaultValue: units[0] },
-                        { name: "target", label: "Total needed", type: "number", min: "1", step: "any", required: true },
-                        { name: "stock", label: "In stock now", type: "number", min: "0", step: "any", required: true },
-                        { name: "minStock", label: "Low stock alert below", type: "number", min: "0", step: "any", required: true },
-                    ]}
-                    validate={(f) =>
-                        materials.some((m) => m.name.toLowerCase() === f.name.trim().toLowerCase())
-                            ? "This material already exists. Use Update stock."
-                            : ""
-                    }
-                    onSubmit={save((f) =>
-                        saveMaterial(id, { name: f.name.trim(), unit: f.unit, used: 0, target: n(f.target), stock: n(f.stock), minStock: n(f.minStock) })
-                    )}
-                />
-            );
-
-        case "stock": {
-            const m = dialog.material;
-            return (
-                <FormDialog
-                    title={`Update ${m.name}`}
-                    onClose={onClose}
-                    initial={m}
-                    fields={[
-                        { name: "used", label: `Used so far (${m.unit})`, type: "number", min: "0", step: "any", required: true },
-                        { name: "target", label: `Total needed (${m.unit})`, type: "number", min: "1", step: "any", required: true },
-                        { name: "stock", label: `In stock now (${m.unit})`, type: "number", min: "0", step: "any", required: true },
-                        { name: "minStock", label: "Low stock alert below", type: "number", min: "0", step: "any", required: true },
-                    ]}
-                    onSubmit={save((f) =>
-                        saveMaterial(id, { ...m, used: n(f.used), target: n(f.target), stock: n(f.stock), minStock: n(f.minStock) })
-                    )}
-                />
-            );
-        }
 
         case "edit":
             return (

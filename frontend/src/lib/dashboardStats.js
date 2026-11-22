@@ -1,5 +1,4 @@
 import { sumAmount } from "@/lib/money";
-import { getLowStock } from "@/lib/stock";
 
 export function getDashboardStats({ projects, workers, details, attendance }) {
     const active = projects.filter((p) => p.status === "in_progress");
@@ -20,7 +19,6 @@ export function getDashboardStats({ projects, workers, details, attendance }) {
         presentToday,
         totalWorkers: workers.length,
         pendingPayments,
-        lowStock: getLowStock(projects, details),
         activeProjects,
     };
 }

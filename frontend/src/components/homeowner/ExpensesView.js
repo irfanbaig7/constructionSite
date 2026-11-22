@@ -13,14 +13,13 @@ import { card } from "@/lib/styles";
 import { formatINRFull, sumAmount } from "@/lib/money";
 import { formatDate, todayKey } from "@/lib/date";
 
-const icon = (name) =>
-    name === "Contractor" ? "💵" : ledgerCategories.find((c) => c.name === name)?.icon ?? "📌";
+const icon = (name) => ledgerCategories.find((c) => c.name === name)?.icon ?? "📌";
 
 export default function ExpensesView({ id }) {
     const [data, setData] = useState(undefined);
     const [entries, setEntries] = useState([]);
-    const [filter, setFilter] = useState("All");
     const [adding, setAdding] = useState(false);
+    const [error, setError] = useState("");
 
     const load = useCallback(async () => {
         const [d, e] = await Promise.all([getOwnerProjectDetails(id), getEntries(id)]);
@@ -29,7 +28,7 @@ export default function ExpensesView({ id }) {
     }, [id]);
 
     useEffect(() => {
-        load();
+        load().catch(() => setData(null));
     }, [load]);
 
     const back = <BackLink href="/homeowner/dashboard">← Back to Project</BackLink>;
@@ -44,96 +43,81 @@ export default function ExpensesView({ id }) {
     }
 
     const { project, payments } = data;
-    const rows = [
-        ...payments.map((p) => ({ id: p.id, category: "Contractor", title: `Contractor ko diya: ${p.label}`, date: p.date, amount: p.amount, own: false })),
-        ...entries.map((e) => ({ ...e, own: true })),
-    ].sort((a, b) => b.date.localeCompare(a.date));
 
-    const total = sumAmount(rows);
-    const groups = [
-        ["Contractor", sumAmount(payments)],
-        ...ledgerCategories.map((c) => [c.name, sumAmount(entries.filter((e) => e.category === c.name))]),
-    ].filter(([, v]) => v > 0);
-    const list = filter === "All" ? rows : rows.filter((r) => r.category === filter);
-
-    async function remove(rowId) {
-        await deleteEntry(id, rowId);
-        load();
+    async function remove(entryId) {
+        setError("");
+        try {
+            await deleteEntry(id, entryId);
+            load();
+        } catch (e) {
+            setError(e.message);
+        }
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {back}
             <PageHeader
                 title="Kharcha ka hisaab"
-                subtitle={`${project.name} • Total: ${formatINRFull(total)}`}
-                action={<PrimaryButton onClick={() => setAdding(true)}>+ Add Expense</PrimaryButton>}
+                subtitle={`${project.name} • Kul: ${formatINRFull(sumAmount(payments) + sumAmount(entries))}`}
             />
 
-            {/* Where did the money go */}
-            <section className={`rounded-2xl p-5 ${card}`}>
-                <h2 className="text-lg font-bold">Paisa kahan gaya</h2>
-                {groups.length === 0 ? (
-                    <p className="mt-3 text-sm">Abhi koi kharcha nahi hai.</p>
+            <section className="space-y-3">
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                    <h2 className="text-lg font-bold">Contractor ko diye payments</h2>
+                    <p className="font-bold">{formatINRFull(sumAmount(payments))}</p>
+                </div>
+                {payments.length === 0 ? (
+                    <EmptyState text="Abhi koi payment record nahi hua." />
                 ) : (
-                    <div className="mt-4 space-y-4">
-                        {groups.map(([name, value]) => (
-                            <div key={name}>
-                                <div className="flex justify-between text-sm">
-                                    <span>{icon(name)} {name}</span>
-                                    <span className="font-semibold">{formatINRFull(value)}</span>
+                    <ul className={`divide-y divide-white/10 rounded-2xl light:divide-slate-200 ${card}`}>
+                        {payments.map((p) => (
+                            <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                                <div>
+                                    <p className="font-semibold">{p.label}</p>
+                                    <p className="text-xs">{formatDate(p.date)}</p>
                                 </div>
-                                <div className="mt-1 h-3 rounded-full bg-white/15 light:bg-slate-200">
-                                    <div className="h-3 rounded-full bg-orange-500" style={{ width: `${Math.round((value / total) * 100)}%` }} />
-                                </div>
-                            </div>
+                                <p className="font-bold">{formatINRFull(p.amount)}</p>
+                            </li>
                         ))}
-                    </div>
+                    </ul>
                 )}
             </section>
 
-            {/* Notebook list */}
-            <div className="flex flex-wrap gap-2">
-                {["All", "Contractor", ...ledgerCategories.map((c) => c.name)].map((name) => (
-                    <button
-                        key={name}
-                        type="button"
-                        onClick={() => setFilter(name)}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filter === name
-                            ? "border-orange-500 bg-orange-500/10 text-orange-500"
-                            : "border-white/15 hover:border-orange-500 light:border-slate-300"}`}
-                    >
-                        {name}
-                    </button>
-                ))}
-            </div>
-
-            {list.length === 0 ? (
-                <EmptyState text="Is category me koi entry nahi." />
-            ) : (
-                <ul className={`divide-y divide-white/10 rounded-2xl light:divide-slate-200 ${card}`}>
-                    {list.map((r) => (
-                        <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                            <div className="flex min-w-0 items-center gap-3">
-                                <span className="text-2xl">{icon(r.category)}</span>
-                                <div className="min-w-0">
-                                    <p className="truncate font-semibold">{r.title}</p>
-                                    <p className="text-xs">{r.category} • {formatDate(r.date)}</p>
+            <section className="space-y-3">
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                    <div>
+                        <h2 className="text-lg font-bold">Meri notebook (material aur baaki kharche)</h2>
+                        <p className="text-xs">Material jo aapne laaye ya payment se mangwaye, wo yahan apne aap judte hain. Ye sirf aapko dikhta hai.</p>
+                    </div>
+                    <PrimaryButton onClick={() => setAdding(true)}>+ Add Expense</PrimaryButton>
+                </div>
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                {entries.length === 0 ? (
+                    <EmptyState text="Apne kharche yahan likho." />
+                ) : (
+                    <ul className={`divide-y divide-white/10 rounded-2xl light:divide-slate-200 ${card}`}>
+                        {entries.map((r) => (
+                            <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                                <div className="flex min-w-0 items-center gap-3">
+                                    <span className="text-2xl">{icon(r.category)}</span>
+                                    <div className="min-w-0">
+                                        <p className="truncate font-semibold">{r.title}</p>
+                                        <p className="text-xs">{r.category} • {formatDate(r.date)}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <p className="whitespace-nowrap font-bold">{formatINRFull(r.amount)}</p>
-                                {r.own && (
-                                    <button type="button" aria-label="Delete entry" onClick={() => remove(r.id)}
-                                        className="flex h-7 w-7 items-center justify-center rounded-full text-xs hover:bg-red-500/20 hover:text-red-500">
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            )}
+                                <div className="flex items-center gap-3">
+                                    <p className="whitespace-nowrap font-bold">{formatINRFull(r.amount)}</p>
+                                    {!r.auto && (
+                                        <button type="button" aria-label="Delete entry" onClick={() => remove(r.id)}
+                                            className="flex h-7 w-7 items-center justify-center rounded-full text-xs hover:bg-red-500/20 hover:text-red-500">✕</button>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
 
             {adding && (
                 <FormDialog
@@ -141,7 +125,7 @@ export default function ExpensesView({ id }) {
                     submitLabel="Add"
                     onClose={() => setAdding(false)}
                     fields={[
-                        { name: "title", label: "Kis cheez ka kharcha", placeholder: "e.g. Cement 50 bags", required: true, span: true },
+                        { name: "title", label: "Kis cheez ka kharcha", placeholder: "e.g. Tiles", required: true, span: true },
                         { name: "category", label: "Category", options: ledgerCategories.map((c) => c.name), defaultValue: ledgerCategories[0].name },
                         { name: "amount", label: "Amount (₹)", type: "number", min: "1", required: true },
                         { name: "date", label: "Date", type: "date", required: true, defaultValue: todayKey() },
