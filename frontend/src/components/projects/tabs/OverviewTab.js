@@ -1,3 +1,4 @@
+
 import StatCard from "@/components/dashboard/StatCard";
 import { card } from "@/lib/styles";
 import { formatINR } from "@/lib/format";
@@ -31,7 +32,8 @@ export default function OverviewTab({ project, payments, expenses, workerPayment
                 <StatCard label="Progress" value={`${project.progress}%`} icon="📈" tone="blue" />
                 <StatCard label="Project Budget" value={formatINR(project.budget)} icon="💼" tone="purple" />
                 <StatCard label="Payments Pending" value={formatINR(pending)} icon="⏳" tone="orange" />
-                <StatCard label="Mera kul kharcha" value={formatINR(siteExpenses)} icon="🧾" tone="green" hint="Site kharche + workers ka payment" />            </div>
+                <StatCard label="Total Site Expenses" value={formatINR(siteExpenses)} icon="🧾" tone="green" hint="Site expenses + Worker payments" />
+            </div>
 
             <div className="grid gap-6 xl:grid-cols-3">
                 <section className={`rounded-2xl p-5 xl:col-span-2 ${card}`}>

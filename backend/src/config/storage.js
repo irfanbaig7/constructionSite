@@ -1,3 +1,4 @@
+
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
@@ -13,7 +14,7 @@ export async function saveImage(buffer, folder) {
     try {
         out = await sharp(buffer).rotate().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
     } catch {
-        throw new HttpError(400, "Photo sahi nahi hai. Dusri photo try karo.");
+        throw new HttpError(400, "Invalid photo. Please try uploading a different one.");
     }
     const dir = path.join(ROOT, folder);
     await fs.mkdir(dir, { recursive: true });

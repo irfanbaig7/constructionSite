@@ -1,3 +1,4 @@
+
 "use client";
 
 import FormDialog from "@/components/ui/FormDialog";
@@ -30,17 +31,17 @@ export default function ProjectDialog({ dialog, data, onClose, onSaved }) {
         case "payment":
             return (
                 <FormDialog
-                    title="Homeowner se payment maango"
-                    submitLabel="Homeowner ko bhejo"
+                    title="Request payment from homeowner"
+                    submitLabel="Send to homeowner"
                     onClose={onClose}
                     fields={[
-                        { name: "label", label: "Kis ke liye", placeholder: "e.g. 3rd installment (slab)", required: true, span: true },
+                        { name: "label", label: "Payment purpose", placeholder: "e.g. 3rd installment (slab)", required: true, span: true },
                         { name: "amount", label: "Amount (₹)", type: "number", min: "1", required: true },
                         { name: "note", label: "Note (optional)", span: true },
                     ]}
                     validate={(f) => {
                         const left = project.budget - sumAmount(payments);
-                        return n(f.amount) > left ? `Amount baki ${formatINRFull(left)} se zyada hai.` : "";
+                        return n(f.amount) > left ? `Amount cannot exceed the remaining budget of ${formatINRFull(left)}.` : "";
                     }}
                     onSubmit={save((f) => createPaymentRequest(id, { ...f, amount: n(f.amount) }))}
                 />
@@ -53,7 +54,7 @@ export default function ProjectDialog({ dialog, data, onClose, onSaved }) {
                     submitLabel="Add expense"
                     onClose={onClose}
                     fields={[
-                        { name: "title", label: "Kis cheez ka kharcha", placeholder: "e.g. Chai paani, drill machine", required: true, span: true },
+                        { name: "title", label: "Expense description", placeholder: "e.g. Refreshments, drill machine", required: true, span: true },
                         { name: "category", label: "Category", options: expenseCategories.map((c) => c.name), defaultValue: expenseCategories[0].name },
                         { name: "amount", label: "Amount (₹)", type: "number", min: "1", required: true },
                         { name: "date", label: "Date", type: "date", required: true, defaultValue: todayKey(), span: true },

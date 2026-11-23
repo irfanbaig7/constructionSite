@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import { z } from "zod";
 import Material from "../models/Material.js";
@@ -13,7 +14,7 @@ import { text, amount } from "../schemas/common.js";
 
 const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment"];
 const CI = { locale: "en", strength: 2 };
-const qty = z.coerce.number().positive("Quantity 0 se zyada honi chahiye.");
+const qty = z.coerce.number().positive("Quantity must be greater than 0.");
 const nonNeg = z.coerce.number().min(0).default(0);
 
 const router = Router({ mergeParams: true });
@@ -24,7 +25,7 @@ const homeowner = requireRole("homeowner");
 async function find(req, statuses) {
     const r = await MaterialRequest.findOne({ _id: req.params.rid, projectId: req.project._id });
     if (!r) throw new HttpError(404, "Request not found.");
-    if (!statuses.includes(r.status)) throw new HttpError(409, "Is request par ab ye kaam nahi ho sakta.");
+    if (!statuses.includes(r.status)) throw new HttpError(409, "This action is no longer available for this request.");
     return r;
 }
 
@@ -49,7 +50,7 @@ router.post("/", contractor, async (req, res) => {
         Material.findOne({ projectId, name: b.name }).collation(CI),
         MaterialRequest.findOne({ projectId, name: b.name, status: { $in: OPEN } }).collation(CI),
     ]);
-    if (clash) throw new HttpError(409, "Is material ki request pehle se khuli hai.");
+    if (clash) throw new HttpError(409, "A request for this material is already open.");
     res.status(201).json(await MaterialRequest.create({ ...b, projectId, unit: existing?.unit ?? b.unit }));
 });
 
@@ -70,7 +71,7 @@ router.post("/:rid/quote", contractor, async (req, res) => {
 router.post("/:rid/respond", homeowner, async (req, res) => {
     const { action } = z.object({ action: z.enum(["will_bring", "ask_contractor"]) }).parse(req.body);
     const r = await find(req, ["pending", "owner_bringing"]);
-    if (action === "will_bring" && r.status !== "pending") throw new HttpError(409, "Galat action.");
+    if (action === "will_bring" && r.status !== "pending") throw new HttpError(409, "Invalid action.");
     r.status = action === "will_bring" ? "owner_bringing" : "quote_needed";
     res.json(await r.save());
 });
@@ -84,7 +85,7 @@ router.post("/:rid/deliver", homeowner, async (req, res) => {
         { status: "fulfilled", source: "owner", deliveredQty: quantity, fulfilledAt: new Date() },
         { new: true }
     );
-    if (!done) throw new HttpError(409, "Ye request pehle hi poori ho chuki hai.");
+    if (!done) throw new HttpError(409, "This request has already been fulfilled.");
     await addToStock(req.project._id, done, quantity);
     if (spent > 0)
         await LedgerEntry.create({ projectId: req.project._id, category: "Material", title: `${done.name} ${quantity} ${done.unit}`, date: today(), amount: spent, auto: true });
@@ -104,7 +105,7 @@ mountPayment(router, {
         );
         if (!done) return null;
         await addToStock(req.project._id, done, done.quantity);
-        await LedgerEntry.create({ projectId: req.project._id, category: "Material", title: `${done.name} ${done.quantity} ${done.unit} (contractor ke through)`, date: today(), amount: done.amount, auto: true });
+        await LedgerEntry.create({ projectId: req.project._id, category: "Material", title: `${done.name} ${done.quantity} ${done.unit} (contractor's through)`, date: today(), amount: done.amount, auto: true });
         return done;
     },
 });

@@ -1,6 +1,9 @@
+
 import { clearSession } from "@/lib/session";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+
+export const ORIGIN = BASE.replace(/\/api$/, "");
 
 export class ApiError extends Error {
     constructor(message, status) {
@@ -22,7 +25,7 @@ export async function api(path, { method = "GET", body } = {}) {
         });
     } catch (e) {
         throw new ApiError(
-            e.name === "TimeoutError" ? "Server jawab nahi de raha. Dobara try karo." : "Server tak nahi pahunch paaye. Internet ya backend check karo.",
+            e.name === "TimeoutError" ? "The server is not responding. Please try again." : "Unable to connect to the server. Check your internet connection or backend.",
             0
         );
     }
@@ -32,6 +35,6 @@ export async function api(path, { method = "GET", body } = {}) {
         clearSession();
         window.location.assign("/login");
     }
-    if (!res.ok) throw new ApiError(data.message || "Kuch galat ho gaya.", res.status);
+    if (!res.ok) throw new ApiError(data.message || "Something went wrong.", res.status);
     return data;
 }

@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import Worker from "../models/Worker.js";
 import WorkerPayment from "../models/WorkerPayment.js";
@@ -12,7 +13,7 @@ export default childRouter({
     schema: z.object({ workerId: objectId, amount, date: dateStr, note: z.string().trim().max(200).default("") }),
     build: async (req, { workerId }) => {
         const w = await Worker.findOne({ _id: workerId, ownerId: req.user._id });
-        if (!w) throw new HttpError(400, "Worker chuno.");
+        if (!w) throw new HttpError(400, "Please select a worker.");
         return { workerId: String(w._id), workerName: w.name };
     },
 });

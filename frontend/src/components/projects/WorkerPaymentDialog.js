@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,20 +19,20 @@ export default function WorkerPaymentDialog({ projectId, onClose, onSaved }) {
     if (workers.length === 0)
         return (
             <Modal title="Worker payment" onClose={onClose}>
-                <p className="text-sm">Pehle Workers page par worker add karo.</p>
+                <p className="text-sm">Please add a worker from the Workers page first.</p>
             </Modal>
         );
 
     return (
         <FormDialog
-            title="Worker ko payment"
-            submitLabel="Payment likho"
+            title="Pay worker"
+            submitLabel="Record payment"
             onClose={onClose}
             fields={[
                 { name: "workerId", label: "Worker", options: workers.map((w) => ({ value: w.id, label: w.name })), defaultValue: workers[0].id, span: true },
                 { name: "amount", label: "Amount (₹)", type: "number", min: "1", required: true },
                 { name: "date", label: "Date", type: "date", required: true, defaultValue: todayKey() },
-                { name: "note", label: "Note (optional)", span: true, placeholder: "e.g. hafte ki mazdoori" },
+                { name: "note", label: "Note (optional)", span: true, placeholder: "e.g. Weekly wages" },
             ]}
             onSubmit={async (f) => {
                 await addWorkerPayment(projectId, f);

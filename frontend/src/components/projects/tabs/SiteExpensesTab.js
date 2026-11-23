@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -17,7 +18,7 @@ export default function SiteExpensesTab({ projectId, expenses, onAdd, onChanged 
     const icon = (name) => expenseCategories.find((c) => c.name === name)?.icon ?? "📌";
 
     async function remove(id) {
-        if (!window.confirm("Ye kharcha delete karna hai?")) return;
+        if (!window.confirm("Are you sure you want to delete this expense?")) return;
         setError("");
         try {
             await deleteExpense(projectId, id);
@@ -31,13 +32,13 @@ export default function SiteExpensesTab({ projectId, expenses, onAdd, onChanged 
         <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <p className="text-sm">{filter === "All" ? "Mere apne kharche" : `${filter} total`}</p>
+                    <p className="text-sm">{filter === "All" ? "My Expenses" : `${filter} Total`}</p>
                     <p className="text-3xl font-bold">{formatINRFull(sumAmount(list))}</p>
                 </div>
                 <PrimaryButton onClick={onAdd}>+ Add Expense</PrimaryButton>
             </div>
 
-            <p className="text-sm">🔒 Ye aapke apne kharche hain (tools, transport, chai). Sirf aapko dikhte hain, homeowner ko nahi.</p>
+            <p className="text-sm">🔒 These are your personal expenses (tools, transport, refreshments). Only you can see them; they are not visible to the homeowner.</p>
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <div className="flex flex-wrap gap-2">
@@ -52,7 +53,7 @@ export default function SiteExpensesTab({ projectId, expenses, onAdd, onChanged 
             </div>
 
             {list.length === 0 ? (
-                <EmptyState text="Koi kharcha nahi." />
+                <EmptyState text="No expenses recorded yet." />
             ) : (
                 <ul className={`divide-y divide-white/10 rounded-2xl light:divide-slate-200 ${card}`}>
                     {list.map((e) => (

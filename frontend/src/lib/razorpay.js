@@ -1,10 +1,11 @@
+
 function loadRazorpay() {
     return new Promise((resolve, reject) => {
         if (window.Razorpay) return resolve(window.Razorpay);
         const s = document.createElement("script");
         s.src = "https://checkout.razorpay.com/v1/checkout.js";
         s.onload = () => resolve(window.Razorpay);
-        s.onerror = () => reject(new Error("Payment window load nahi hui. Internet check karo."));
+        s.onerror = () => reject(new Error("Unable to load the payment window. Please check your internet connection."));
         document.body.appendChild(s);
     });
 }
@@ -16,9 +17,9 @@ export async function openCheckout(options) {
         const rz = new Razorpay({
             ...options,
             handler: resolve,
-            modal: { ondismiss: () => reject(new Error("Payment cancel ho gaya.")) },
+            modal: { ondismiss: () => reject(new Error("Payment was cancelled.")) },
         });
-        rz.on("payment.failed", (r) => reject(new Error(r.error?.description || "Payment fail ho gaya.")));
+        rz.on("payment.failed", (r) => reject(new Error(r.error?.description || "Payment failed.")));
         rz.open();
     });
 }

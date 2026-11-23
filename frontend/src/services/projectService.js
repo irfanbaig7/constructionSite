@@ -38,17 +38,6 @@ export async function getOwnerProjectDetails(id) {
     }
 }
 
-// { projectId: { payments } } for the contractor dashboard
-export async function getAllDetails() {
-    const projects = await getProjects();
-    const entries = await Promise.all(
-        projects.map(async (p) => {
-            const { payments } = await api(`/projects/${p.id}`);
-            return [p.id, { payments }];
-        })
-    );
-    return Object.fromEntries(entries);
-}
 
 export const createProject = (data) => api("/projects", { method: "POST", body: data });
 export const editProject = (id, patch) => api(`/projects/${id}`, { method: "PATCH", body: patch });

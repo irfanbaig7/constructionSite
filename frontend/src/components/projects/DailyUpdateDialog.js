@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -51,9 +52,9 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
         e.preventDefault();
         setError("");
         if (photos.length === 0) return setError("Add at least 1 photo as proof.");
-        if (selected.length === 0) return setError("Tick at least 1 worker who was present.");
+        if (selected.length === 0) return setError("Select at least 1 worker who was present.");
         if (usage.some((r) => !r.materialId || !(Number(r.quantity) > 0)))
-            return setError("Material ki row poori bharo ya hata do.");
+            return setError("Complete the material row or remove it.");
 
         const fd = new FormData();
         fd.append("summary", summary);
@@ -128,15 +129,15 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
                 </div>
 
                 <div>
-                    <p className="mb-1.5 text-sm font-medium">Aaj material kitna laga (optional)</p>
+                    <p className="mb-1.5 text-sm font-medium">Material usage today (optional)</p>
                     {inStock.length === 0 ? (
-                        <p className="text-xs">Stock me koi material nahi. Material tab se homeowner ko request bhejo.</p>
+                        <p className="text-xs">No materials in stock. Send a request to the homeowner from the Materials tab.</p>
                     ) : (
                         <div className="space-y-2">
                             {usage.map((r, i) => (
                                 <div key={i} className="flex gap-2">
                                     <select value={r.materialId} onChange={(e) => setRow(i, { materialId: e.target.value })} className={inputClass}>
-                                        <option value="">Material chuno</option>
+                                        <option value="">Select material</option>
                                         {inStock.map((m) => (
                                             <option key={m.id} value={m.id}>{m.name} (stock {m.stock} {m.unit})</option>
                                         ))}
@@ -149,7 +150,7 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
                             ))}
                             <button type="button" onClick={() => setUsage((u) => [...u, { materialId: "", quantity: "" }])}
                                 className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold hover:border-orange-500 light:border-slate-300">
-                                + Material jodo
+                                + Add material
                             </button>
                         </div>
                     )}

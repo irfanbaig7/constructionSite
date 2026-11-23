@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import { z } from "zod";
 import Project from "../models/Project.js";
@@ -29,8 +30,8 @@ const createSchema = z
         notes: z.string().trim().max(1000).default(""),
         milestones: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
     })
-    .refine((d) => d.advance <= d.budget, { message: "Advance budget se zyada nahi ho sakta.", path: ["advance"] })
-    .refine((d) => d.expectedEnd > d.startDate, { message: "Expected end date start date ke baad honi chahiye.", path: ["expectedEnd"] });
+    .refine((d) => d.advance <= d.budget, { message: "Advance cannot exceed the budget.", path: ["advance"] })
+    .refine((d) => d.expectedEnd > d.startDate, { message: "Expected end date must be after the start date.", path: ["expectedEnd"] });
 
 const patchSchema = z
     .object({
@@ -72,7 +73,7 @@ router.patch("/:id", loadProject("contractor"), async (req, res) => {
     const p = req.project;
     p.set(patchSchema.parse(req.body));
     if (p.budget < (await received(p._id))) throw new HttpError(400, "Budget cannot be less than payments already received.");
-    if (p.expectedEnd <= p.startDate) throw new HttpError(400, "Expected end must be after the start date.");
+    if (p.expectedEnd <= p.startDate) throw new HttpError(400, "Expected end date must be after the start date.");
     res.json(await p.save());
 });
 

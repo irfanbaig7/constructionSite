@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -51,7 +52,7 @@ export default function MaterialRequests({ projectId, requests, onChanged }) {
 
     return (
         <section className={`rounded-2xl border-orange-500/60 p-5 ${card}`}>
-            <h2 className="text-lg font-bold">🔔 Contractor ne material maanga hai</h2>
+            <h2 className="text-lg font-bold">🔔 Material Requests from Contractor</h2>
             {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
             <ul className="mt-3 divide-y divide-white/10 light:divide-slate-200">
                 {open.map((r) => (
@@ -63,33 +64,33 @@ export default function MaterialRequests({ projectId, requests, onChanged }) {
                             <div className="flex flex-wrap gap-2">
                                 <button type="button" disabled={busyId === r.id} className={`${btn} bg-orange-500 text-white hover:bg-orange-600`}
                                     onClick={() => run(r.id, () => respondRequest(projectId, r.id, "will_bring"))}>
-                                    Main laaunga
+                                    I'll Arrange It
                                 </button>
                                 <button type="button" disabled={busyId === r.id} className={`${btn} border border-white/15 hover:border-orange-500 light:border-slate-300`}
                                     onClick={() => run(r.id, () => respondRequest(projectId, r.id, "ask_contractor"))}>
-                                    Aap laao (contractor)
+                                    Ask Contractor to Arrange
                                 </button>
                             </div>
                         )}
 
                         {r.status === "owner_bringing" && (
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm">Aap laa rahe ho.</span>
+                                <span className="text-sm">You're arranging this material.</span>
                                 <button type="button" className={`${btn} bg-orange-500 text-white hover:bg-orange-600`} onClick={() => setDialog(r)}>
-                                    Maine laa diya
+                                    Mark as Delivered
                                 </button>
                                 <button type="button" disabled={busyId === r.id} className={`${btn} border border-white/15 hover:border-orange-500 light:border-slate-300`}
                                     onClick={() => run(r.id, () => respondRequest(projectId, r.id, "ask_contractor"))}>
-                                    Nahi laa sakta, contractor laaye
+                                    Unable to Arrange — Ask Contractor
                                 </button>
                             </div>
                         )}
 
-                        {r.status === "quote_needed" && <p className="text-sm">Contractor ke quote (price) ka intezaar hai.</p>}
+                        {r.status === "quote_needed" && <p className="text-sm">Waiting for the contractor's price quote.</p>}
 
                         {r.status === "awaiting_payment" && (
                             <div className="flex flex-wrap items-center gap-3">
-                                <p className="text-sm">Contractor ka quote: <span className="font-bold">{formatINRFull(r.amount)}</span> ({r.quantity} {r.unit})</p>
+                                <p className="text-sm">Contractor's Quote: <span className="font-bold">{formatINRFull(r.amount)}</span> ({r.quantity} {r.unit})</p>
                                 <button type="button" disabled={busyId === r.id} className={`${btn} bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60`}
                                     onClick={() => pay(r)}>
                                     {busyId === r.id ? "Please wait..." : `Pay ${formatINRFull(r.amount)}`}
@@ -102,13 +103,13 @@ export default function MaterialRequests({ projectId, requests, onChanged }) {
 
             {dialog && (
                 <FormDialog
-                    title={`${dialog.name}: laa diya`}
-                    submitLabel="Save"
+                    title={`Confirm ${dialog.name} Delivery`}
+                    submitLabel="Confirm Delivery"
                     onClose={() => setDialog(null)}
                     initial={{ quantity: dialog.quantity }}
                     fields={[
-                        { name: "quantity", label: `Kitna laaye (${dialog.unit})`, type: "number", min: "0.01", step: "any", required: true },
-                        { name: "amount", label: "Kitna kharcha hua (₹, sirf aapko dikhega)", type: "number", min: "0", step: "any" },
+                        { name: "quantity", label: `Quantity Delivered (${dialog.unit})`, type: "number", min: "0.01", step: "any", required: true },
+                        { name: "amount", label: "Amount Spent (₹, visible only to you)", type: "number", min: "0", step: "any" },
                     ]}
                     onSubmit={async (f) => {
                         await deliverRequest(projectId, dialog.id, { quantity: Number(f.quantity), amount: Number(f.amount || 0) });

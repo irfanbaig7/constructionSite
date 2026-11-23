@@ -18,6 +18,9 @@ import materialRequests from "./routes/materialRequests.js";
 import paymentRequests from "./routes/paymentRequests.js";
 import workerPayments from "./routes/workerPayments.js";
 import ledger from "./routes/ledger.js";
+import http from "http";
+import pinoHttp from "pino-http";
+import { initRealtime, notifyProject } from "./realtime.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -26,6 +29,7 @@ if (env.NODE_ENV === "production") app.set("trust proxy", 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
 app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
 app.use(cookieParser());
+app.use(pinoHttp({ level: env.NODE_ENV === "production" ? "info" : "warn" }));
 app.use(express.json({ limit: "100kb" }));
 app.use("/uploads", express.static("uploads"));
 app.use("/api", rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false }));
@@ -46,6 +50,12 @@ const routes = {
     "/projects/:projectId/ledger": ledger,
     "/updates": updateById,
 };
+
+app.use("/api/projects/:projectId", (req, res, next) => {
+    if (req.method !== "GET") res.on("finish", () => res.statusCode < 400 && notifyProject(req.params.projectId));
+    next();
+});
+
 for (const [path, router] of Object.entries(routes)) app.use(`/api${path}`, router);
 
 app.use((_req, res) => res.status(404).json({ message: "Not found." }));
@@ -65,7 +75,9 @@ try {
     process.exit(1);
 }
 
-const server = app.listen(env.PORT, () => console.log(`API on http://localhost:${env.PORT}`));
+const server = http.createServer(app);
+initRealtime(server);
+server.listen(env.PORT, () => console.log(`API on http://localhost:${env.PORT}`));
 
 async function shutdown() {
     server.close();

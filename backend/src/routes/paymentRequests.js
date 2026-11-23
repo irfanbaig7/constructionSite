@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import { z } from "zod";
 import Payment from "../models/Payment.js";
@@ -29,19 +30,19 @@ router.get("/", async (req, res) =>
 
 router.post("/", requireRole("contractor"), async (req, res) => {
     const b = z.object({ label: text(80), amount, note: z.string().trim().max(300).default("") }).parse(req.body);
-    if (b.amount > req.project.budget - (await received(req.project._id))) throw new HttpError(400, "Amount baki balance se zyada hai.");
+    if (b.amount > req.project.budget - (await received(req.project._id))) throw new HttpError(400, "Amount exceeds the remaining balance.");
     res.status(201).json(await PaymentRequest.create({ ...b, projectId: req.project._id }));
 });
 
 router.post("/:rid/cancel", requireRole("contractor"), async (req, res) => {
     const r = await PaymentRequest.findOneAndUpdate(pending(req, req.params.rid), { status: "cancelled" }, { new: true });
-    if (!r) throw new HttpError(409, "Ye request ab khuli nahi hai.");
+    if (!r) throw new HttpError(409, "This request is no longer open.");
     res.json(r);
 });
 
 router.post("/:rid/pay/cash", requireRole("homeowner"), async (req, res) => {
     const r = await PaymentRequest.findOne(pending(req, req.params.rid));
-    if (!r) throw new HttpError(409, "Ye request ab khuli nahi hai.");
+    if (!r) throw new HttpError(409, "This request is no longer open.");
     res.json((await markPaid(req, r, { method: "cash" })) ?? r);
 });
 

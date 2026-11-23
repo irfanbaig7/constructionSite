@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -12,12 +13,12 @@ import { formatINRFull } from "@/lib/money";
 const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment"];
 const units = ["bags", "pcs", "tons", "kg", "litres", "cft"];
 const STATUS = {
-    pending: "Homeowner ke jawab ka intezaar",
-    owner_bringing: "Homeowner khud laa rahe hain",
-    quote_needed: "Homeowner ne kaha aap laao: quote bhejo",
-    awaiting_payment: "Quote bheja, payment ka intezaar",
-    fulfilled: "Mil gaya",
-    cancelled: "Cancel",
+    pending: "Awaiting homeowner response",
+    owner_bringing: "Homeowner will arrange the material",
+    quote_needed: "Homeowner requested contractor arrangement: quote required",
+    awaiting_payment: "Quote submitted, awaiting payment",
+    fulfilled: "Delivered",
+    cancelled: "Cancelled",
 };
 const icons = { Cement: "🪣", Bricks: "🧱", Steel: "🔩", Sand: "🏖️" };
 const num = (v) => Number(v || 0);
@@ -46,15 +47,15 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="max-w-xl text-sm">
-                    Material aap khud add nahi kar sakte. Request homeowner ko jaati hai: wo khud laayenge, ya aapse mangwayenge (payment ke baad).
+                    Materials cannot be added directly. A request is sent to the homeowner, who can either arrange the material themselves or ask you to arrange it after payment.
                 </p>
-                <PrimaryButton onClick={() => setDialog({ type: "request" })}>+ Material maango</PrimaryButton>
+                <PrimaryButton onClick={() => setDialog({ type: "request" })}>+ Request Material</PrimaryButton>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             {open.length > 0 && (
                 <section className={`rounded-2xl p-5 ${card}`}>
-                    <h2 className="text-lg font-bold">Khuli requests</h2>
+                    <h2 className="text-lg font-bold">Open Requests</h2>
                     <ul className="mt-3 divide-y divide-white/10 light:divide-slate-200">
                         {open.map((r) => (
                             <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -65,11 +66,11 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
                                 <div className="flex gap-2">
                                     {["quote_needed", "awaiting_payment"].includes(r.status) && (
                                         <button type="button" className={small} onClick={() => setDialog({ type: "quote", request: r })}>
-                                            {r.status === "quote_needed" ? "Quote bhejo" : "Quote badlo"}
+                                            {r.status === "quote_needed" ? "Submit Quote" : "Update Quote"}
                                         </button>
                                     )}
                                     <button type="button" className={`${small} hover:text-red-500`}
-                                        onClick={() => window.confirm("Request cancel karni hai?") && run(() => cancelRequest(projectId, r.id))}>
+                                        onClick={() => window.confirm("Are you sure you want to cancel this request?") && run(() => cancelRequest(projectId, r.id))}>
                                         Cancel
                                     </button>
                                 </div>
@@ -80,7 +81,7 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
             )}
 
             {materials.length === 0 ? (
-                <EmptyState text="Abhi koi material nahi. 'Material maango' se homeowner ko request bhejo." />
+                <EmptyState text="No materials added yet. Use 'Request Material' to send a request to the homeowner." />
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                     {materials.map((x) => {
@@ -94,27 +95,27 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
                                         <p className="text-lg font-bold">{x.name}</p>
                                         <p className="text-sm">
                                             {x.target > 0
-                                                ? `Laga ${x.used.toLocaleString("en-IN")} ${x.unit} / kul ${x.target.toLocaleString("en-IN")} ${x.unit}`
-                                                : `Laga ${x.used.toLocaleString("en-IN")} ${x.unit} (kul target set nahi)`}
+                                                ? `Used ${x.used.toLocaleString("en-IN")} ${x.unit} / Total ${x.target.toLocaleString("en-IN")} ${x.unit}`
+                                                : `Used ${x.used.toLocaleString("en-IN")} ${x.unit} (No total target set)`}
                                         </p>
                                     </div>
                                     {low && (
                                         <span className="rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-semibold text-red-300 light:bg-red-100 light:text-red-800">
-                                            Kam hai
+                                            Low Stock
                                         </span>
                                     )}
                                 </div>
                                 <div className="mt-4"><ProgressBar value={percent} /></div>
                                 <p className="mt-2 text-sm">
-                                    Abhi stock: <span className="font-semibold">{x.stock.toLocaleString("en-IN")} {x.unit}</span>
-                                    {x.minStock > 0 && <span className="text-xs"> (alert {x.minStock} se kam par)</span>}
+                                    Current Stock: <span className="font-semibold">{x.stock.toLocaleString("en-IN")} {x.unit}</span>
+                                    {x.minStock > 0 && <span className="text-xs"> (Alert when below {x.minStock})</span>}
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     <button type="button" className={small} onClick={() => setDialog({ type: "request", material: x })}>
-                                        Homeowner ko batao / maango
+                                        Notify / Request from Homeowner
                                     </button>
                                     <button type="button" className={small} onClick={() => setDialog({ type: "limits", material: x })}>
-                                        Target / alert
+                                        Set Target / Alert
                                     </button>
                                 </div>
                             </div>
@@ -125,12 +126,12 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
 
             {past.length > 0 && (
                 <section className={`rounded-2xl p-5 ${card}`}>
-                    <h2 className="text-lg font-bold">Pichhli requests</h2>
+                    <h2 className="text-lg font-bold">Previous Requests</h2>
                     <ul className="mt-3 space-y-2 text-sm">
                         {past.map((r) => (
                             <li key={r.id}>
                                 {r.name} {r.deliveredQty ?? r.quantity} {r.unit}: {STATUS[r.status]}
-                                {r.status === "fulfilled" && ` (${r.source === "owner" ? "homeowner laaye" : "aapne laaye"})`}
+                                {r.status === "fulfilled" && ` (${r.source === "owner" ? "Arranged by homeowner" : "Arranged by contractor"})`}
                             </li>
                         ))}
                     </ul>
@@ -139,19 +140,19 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
 
             {dialog?.type === "request" && (
                 <FormDialog
-                    title={m ? `${m.name} maango` : "Naya material maango"}
-                    submitLabel="Homeowner ko bhejo"
+                    title={m ? `Request ${m.name}` : "Request New Material"}
+                    submitLabel="Send to Homeowner"
                     onClose={close}
                     initial={m ? { name: m.name, unit: m.unit } : {}}
                     fields={[
                         { name: "name", label: "Material", required: true, readOnly: !!m, placeholder: "e.g. Cement" },
                         { name: "unit", label: "Unit", options: units, disabled: !!m, defaultValue: units[0] },
-                        { name: "quantity", label: "Kitna chahiye", type: "number", min: "0.01", step: "any", required: true },
+                        { name: "quantity", label: "Required Quantity", type: "number", min: "0.01", step: "any", required: true },
                         ...(m ? [] : [
-                            { name: "target", label: "Kul kitna lagega (optional)", type: "number", min: "0", step: "any" },
-                            { name: "minStock", label: "Kam hone ka alert (optional)", type: "number", min: "0", step: "any" },
+                            { name: "target", label: "Total Required Quantity (optional)", type: "number", min: "0", step: "any" },
+                            { name: "minStock", label: "Low Stock Alert Threshold (optional)", type: "number", min: "0", step: "any" },
                         ]),
-                        { name: "note", label: "Note (optional)", span: true, placeholder: "e.g. Cement khatam hone ko hai, jaldi chahiye" },
+                        { name: "note", label: "Note (optional)", span: true, placeholder: "e.g. Cement is running low and needed urgently" },
                     ]}
                     onSubmit={async (f) => {
                         await createMaterialRequest(projectId, { ...f, quantity: num(f.quantity), target: num(f.target), minStock: num(f.minStock) });
@@ -162,12 +163,12 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
 
             {dialog?.type === "limits" && (
                 <FormDialog
-                    title={`${m.name}: target aur alert`}
+                    title={`${m.name}: Target and Stock Alert`}
                     onClose={close}
                     initial={{ target: m.target, minStock: m.minStock }}
                     fields={[
-                        { name: "target", label: `Kul kitna lagega (${m.unit})`, type: "number", min: "0", step: "any", required: true },
-                        { name: "minStock", label: `Kam hone ka alert (${m.unit})`, type: "number", min: "0", step: "any", required: true },
+                        { name: "target", label: `Total Required Quantity (${m.unit})`, type: "number", min: "0", step: "any", required: true },
+                        { name: "minStock", label: `Low Stock Alert Threshold (${m.unit})`, type: "number", min: "0", step: "any", required: true },
                     ]}
                     onSubmit={async (f) => {
                         await updateMaterialLimits(projectId, m.id, { target: num(f.target), minStock: num(f.minStock) });
@@ -178,13 +179,13 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
 
             {dialog?.type === "quote" && (
                 <FormDialog
-                    title={`${dialog.request.name}: quote`}
-                    submitLabel="Quote bhejo"
+                    title={`${dialog.request.name}: Quote`}
+                    submitLabel="Submit Quote"
                     onClose={close}
                     initial={{ quantity: dialog.request.quantity, amount: dialog.request.amount ?? "" }}
                     fields={[
                         { name: "quantity", label: `Quantity (${dialog.request.unit})`, type: "number", min: "0.01", step: "any", required: true },
-                        { name: "amount", label: "Total amount (₹)", type: "number", min: "1", required: true },
+                        { name: "amount", label: "Total Amount (₹)", type: "number", min: "1", required: true },
                     ]}
                     onSubmit={async (f) => {
                         await quoteRequest(projectId, dialog.request.id, { quantity: num(f.quantity), amount: num(f.amount) });

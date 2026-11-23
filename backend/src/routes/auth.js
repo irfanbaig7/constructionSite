@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import rateLimit from "express-rate-limit";
@@ -11,13 +12,23 @@ const router = Router();
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 30,
+    limit: 10,
+    skipSuccessfulRequests: true, // only failed attempts count
     standardHeaders: "draft-7",
     legacyHeaders: false,
-    message: { message: "Bahut zyada koshish. 15 minute baad try karo." },
+    handler: (req, res) => {
+        const mins = Math.max(1, Math.ceil((req.rateLimit.resetTime - Date.now()) / 60000));
+        res.status(429).json({ message: `Too many failed attempts. Please try again after ${mins} minutes.` });
+    },
 });
 
-const password = z.string().min(6, "Password kam se kam 6 characters ka ho.").max(72, "Password bahut lamba hai.");
+
+const password = z
+    .string()
+    .min(8, "Password must be at least 8 characters long.")
+    .max(72, "Password is too long.")
+    .regex(/^\S+$/, "Password cannot contain spaces.");
+
 const DUMMY = bcrypt.hashSync("dummy-password", 10); // so unknown emails take as long as real ones
 
 const toSession = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone ?? "" });
@@ -59,7 +70,7 @@ router.patch("/me", async (req, res) => {
 router.post("/password", limiter, async (req, res) => {
     const { current, next } = z.object({ current: z.string().min(1), next: password }).parse(req.body);
     const user = await User.findById(req.user._id).select("+password");
-    if (!(await bcrypt.compare(current, user.password))) throw new HttpError(400, "Current password galat hai.");
+    if (!(await bcrypt.compare(current, user.password))) throw new HttpError(400, "Current password is incorrect.");
     user.password = await bcrypt.hash(next, 10);
     user.tokenVersion += 1;
     await user.save();

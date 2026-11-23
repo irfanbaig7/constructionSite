@@ -140,7 +140,7 @@ export default function NewProjectView() {
         return (
             <div className="space-y-6">
                 <PageHeader title="Project created ✅" subtitle={saved.name} />
-                <p className="text-sm">Demo mode: ye data save nahi hua, isliye projects list me nahi dikhega.</p>
+                <p className="text-sm">Demo mode: This data has not been saved, so it will not appear in the projects list.</p>
                 <dl className={`grid gap-4 rounded-2xl p-5 sm:grid-cols-2 ${card}`}>
                     {rows.map(([k, v]) => (
                         <div key={k}>

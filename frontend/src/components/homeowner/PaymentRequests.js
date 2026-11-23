@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -48,7 +49,7 @@ export default function PaymentRequests({ projectId, requests, onChanged }) {
 
     return (
         <section className={`rounded-2xl border-orange-500/60 p-5 ${card}`}>
-            <h2 className="text-lg font-bold">💰 Contractor ne payment maangi hai</h2>
+            <h2 className="text-lg font-bold">💰 Payment Requests from Contractor</h2>
             {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
             <ul className="mt-3 divide-y divide-white/10 light:divide-slate-200">
                 {open.map((r) => (
@@ -61,9 +62,9 @@ export default function PaymentRequests({ projectId, requests, onChanged }) {
                                 {busyId === r.id ? "Please wait..." : `Pay ${formatINRFull(r.amount)}`}
                             </button>
                             <button type="button" disabled={busyId === r.id}
-                                onClick={() => window.confirm("Aapne ye paisa direct (cash/UPI) de diya hai?") && run(r.id, () => payByCash(projectId, r.id))}
+                                onClick={() => window.confirm("Have you already paid this amount directly via cash or UPI?") && run(r.id, () => payByCash(projectId, r.id))}
                                 className={`${btn} border border-white/15 hover:border-orange-500 light:border-slate-300`}>
-                                Cash/UPI se de diya
+                                Already Paid via Cash/UPI
                             </button>
                         </div>
                     </li>

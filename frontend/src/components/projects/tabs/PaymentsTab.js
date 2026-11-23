@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -24,7 +25,7 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
     );
 
     async function remove(id) {
-        if (!window.confirm("Ye payment delete karni hai?")) return;
+        if (!window.confirm("Are you sure you want to delete this payment?")) return;
         setError("");
         try {
             await deleteWorkerPayment(project.id, id);
@@ -37,7 +38,7 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
     const openRequests = paymentRequests.filter((r) => r.status === "pending");
 
     async function cancel(id) {
-        if (!window.confirm("Request cancel karni hai?")) return;
+        if (!window.confirm("Are you sure you want to cancel this request?")) return;
         setError("");
         try {
             await cancelPaymentRequest(project.id, id);
@@ -63,7 +64,7 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
 
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-bold">Payments from {project.owner}</h2>
-                    <PrimaryButton onClick={onAdd}>+ Payment maango</PrimaryButton>
+                    <PrimaryButton onClick={onAdd}>+ Request Payment</PrimaryButton>
                 </div>
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
@@ -73,7 +74,7 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
                             <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
                                 <div>
                                     <p className="font-semibold">{r.label}: {formatINRFull(r.amount)}</p>
-                                    <p className="text-xs">Homeowner ke payment ka intezaar{r.note && ` • ${r.note}`}</p>
+                                    <p className="text-xs">Awaiting homeowner payment{r.note && ` • ${r.note}`}</p>
                                 </div>
                                 <button type="button" onClick={() => cancel(r.id)}
                                     className="rounded-md border border-white/15 px-2.5 py-1 text-xs font-medium hover:border-red-500 hover:text-red-500 light:border-slate-300">
@@ -104,8 +105,8 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
             <section className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 className="text-lg font-bold">Workers ko diye payments</h2>
-                        <p className="text-sm">Kul: <span className="font-semibold">{formatINRFull(sumAmount(workerPayments))}</span> (sirf aapko dikhta hai)</p>
+                        <h2 className="text-lg font-bold">Payments Made to Workers</h2>
+                        <p className="text-sm">Total: <span className="font-semibold">{formatINRFull(sumAmount(workerPayments))}</span> (Visible only to you)</p>
                     </div>
                     <PrimaryButton onClick={onAddWorker}>+ Worker Payment</PrimaryButton>
                 </div>
@@ -122,7 +123,7 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
                 )}
 
                 {workerPayments.length === 0 ? (
-                    <EmptyState text="Abhi kisi worker ko payment record nahi hui." />
+                    <EmptyState text="No worker payments have been recorded yet." />
                 ) : (
                     <ul className={`divide-y divide-white/10 rounded-2xl light:divide-slate-200 ${card}`}>
                         {workerPayments.map((p) => (

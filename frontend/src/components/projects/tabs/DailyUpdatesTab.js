@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -49,7 +50,7 @@ export default function DailyUpdatesTab({ updates }) {
 
                     {u.deliveries?.length > 0 && (
                         <p className="mt-3 text-sm font-semibold">
-                            🚚 Naya material aaya: {u.deliveries.map((d) => `${d.name} ${d.quantity} ${d.unit} (${d.by === "owner" ? "homeowner laaye" : "aapne laaye"})`).join(", ")}
+                            🚚 New Material Deliveries: {u.deliveries.map((d) => `${d.name} ${d.quantity} ${d.unit} (${d.by === "owner" ? "Arranged by homeowner" : "Arranged by contractor"})`).join(", ")}
                         </p>
                     )}
 

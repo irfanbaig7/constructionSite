@@ -1,10 +1,4 @@
-// "2026-08-25" -> "25 Aug 2026"
-export function formatDate(iso) {
-    return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
+import { format, parseISO } from "date-fns";
 
-export function isToday(iso) {
-    return new Date(iso).toDateString() === new Date().toDateString();
-}
-
-export const todayKey = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD (local)
+export const formatDate = (iso) => format(parseISO(iso), "d MMM yyyy"); // "2026-08-25" -> "25 Aug 2026"
+export const todayKey = () => format(new Date(), "yyyy-MM-dd");
