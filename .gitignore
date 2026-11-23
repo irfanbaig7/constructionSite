@@ -45,3 +45,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.swp
+
+node_modules
+.env
+uploads

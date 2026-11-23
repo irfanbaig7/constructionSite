@@ -40,7 +40,7 @@ export default function Hero() {
 
             {/* Dashboard preview card */}
             <div className={`rounded-2xl p-5 shadow-2xl ${card}`}>
-                <p className={`text-sm ${text}`}>Welcome back, Irfan 👋</p>
+                <p className={`text-sm ${text}`}>Daily updates 🏠</p>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                     {stats.map(([label, value]) => (
                         <div key={label} className="rounded-xl bg-white p-3 text-slate-900 light:bg-slate-100">
@@ -52,8 +52,8 @@ export default function Hero() {
                 <div className="mt-4 rounded-xl bg-white p-4 text-slate-900 light:bg-slate-100">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="font-semibold">Baig Residence</p>
-                            <p className="text-xs text-slate-700">Khultabad, MH</p>
+                            <p className="font-semibold">Sharma Residence</p>
+                            <p className="text-xs text-slate-700">Pune, MH</p>
                         </div>
                         <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">In Progress</span>
                     </div>

@@ -4,6 +4,7 @@ import { card } from "@/lib/styles";
 import { formatINR } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { sumAmount } from "@/lib/money";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 const milestoneStyle = {
     done: { icon: "✅", label: "Done" },
@@ -11,7 +12,7 @@ const milestoneStyle = {
     pending: { icon: "⚪", label: "Pending" },
 };
 
-export default function OverviewTab({ project, payments, expenses, workerPayments }) {
+export default function OverviewTab({ project, payments, expenses, workerPayments, onEdit }) {
     const received = sumAmount(payments);
     const pending = project.budget - received;
     const siteExpenses = sumAmount(expenses) + sumAmount(workerPayments);
@@ -24,6 +25,8 @@ export default function OverviewTab({ project, payments, expenses, workerPayment
         ["Rooms", project.rooms],
         ["Start Date", formatDate(project.startDate)],
         ["Expected End", formatDate(project.expectedEnd)],
+        ["Owner email", project.ownerEmail],
+        ["Owner phone", project.ownerPhone],
     ];
 
     return (
@@ -37,7 +40,10 @@ export default function OverviewTab({ project, payments, expenses, workerPayment
 
             <div className="grid gap-6 xl:grid-cols-3">
                 <section className={`rounded-2xl p-5 xl:col-span-2 ${card}`}>
-                    <h2 className="text-lg font-bold">Project Info</h2>
+                    <div className="flex items-center justify-between gap-3">
+                        <h2 className="text-lg font-bold">Project Info</h2>
+                        <PrimaryButton variant="outline" onClick={onEdit}>✎ Edit details</PrimaryButton>
+                    </div>
                     <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                         {info.map(([label, value]) => (
                             <div key={label}>

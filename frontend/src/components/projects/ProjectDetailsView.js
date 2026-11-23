@@ -24,7 +24,7 @@ function Body({ data }) {
     const { project, payments, expenses, materials, requests, paymentRequests, workerPayments, updates } = data;
 
     const tabs = {
-        overview: <OverviewTab project={project} payments={payments} expenses={expenses} workerPayments={workerPayments} />,
+        overview: <OverviewTab project={project} payments={payments} expenses={expenses} workerPayments={workerPayments} onEdit={open("edit")} />,
         updates: <DailyUpdatesTab updates={updates} />,
         materials: <MaterialsTab projectId={project.id} materials={materials} requests={requests} onChanged={refresh} />,
         expenses: <SiteExpensesTab projectId={project.id} expenses={expenses} onAdd={open("expense")} onChanged={refresh} />,
@@ -36,7 +36,7 @@ function Body({ data }) {
 
     return (
         <>
-            <ProjectHeader project={project} onAddUpdate={open("update")} onEdit={open("edit")} />
+            <ProjectHeader project={project} onAddUpdate={open("update")} />
             <ProjectTabs tabs={projectTabs} active={tab} onChange={setTab} />
             {tabs[tab]}
             <ProjectDialog dialog={dialog} data={data} onClose={() => setDialog(null)} onSaved={refresh} />
