@@ -40,12 +40,6 @@ router.post("/:rid/cancel", requireRole("contractor"), async (req, res) => {
     res.json(r);
 });
 
-router.post("/:rid/pay/cash", requireRole("homeowner"), async (req, res) => {
-    const r = await PaymentRequest.findOne(pending(req, req.params.rid));
-    if (!r) throw new HttpError(409, "This request is no longer open.");
-    res.json((await markPaid(req, r, { method: "cash" })) ?? r);
-});
-
 mountPayment(router, {
     Model: PaymentRequest,
     openFilter: { status: "pending" },

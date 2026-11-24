@@ -6,7 +6,7 @@ import useSession from "@/hooks/useSession";
 import { card } from "@/lib/styles";
 import { formatINRFull } from "@/lib/money";
 import { openCheckout } from "@/lib/razorpay";
-import { createPaymentOrder, verifyPayment, payByCash } from "@/services/paymentService";
+import { createPaymentOrder, verifyPayment } from "@/services/paymentService";
 
 const btn = "rounded-lg px-3 py-2 text-sm font-semibold";
 
@@ -56,17 +56,10 @@ export default function PaymentRequests({ projectId, requests, onChanged }) {
                     <li key={r.id} className="space-y-2 py-3">
                         <p className="font-semibold">{r.label}: {formatINRFull(r.amount)}</p>
                         {r.note && <p className="text-sm">{r.note}</p>}
-                        <div className="flex flex-wrap gap-2">
-                            <button type="button" disabled={busyId === r.id} onClick={() => pay(r)}
-                                className={`${btn} bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60`}>
-                                {busyId === r.id ? "Please wait..." : `Pay ${formatINRFull(r.amount)}`}
-                            </button>
-                            <button type="button" disabled={busyId === r.id}
-                                onClick={() => window.confirm("Have you already paid this amount directly via cash or UPI?") && run(r.id, () => payByCash(projectId, r.id))}
-                                className={`${btn} border border-white/15 hover:border-orange-500 light:border-slate-300`}>
-                                Already Paid via Cash/UPI
-                            </button>
-                        </div>
+                        <button type="button" disabled={busyId === r.id} onClick={() => pay(r)}
+                            className={`${btn} bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60`}>
+                            {busyId === r.id ? "Please wait..." : `Pay ${formatINRFull(r.amount)}`}
+                        </button>
                     </li>
                 ))}
             </ul>
