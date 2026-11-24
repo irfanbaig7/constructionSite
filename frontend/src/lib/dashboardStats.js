@@ -1,4 +1,4 @@
-export function getDashboardStats({ projects, workers, attendance }) {
+export function getDashboardStats({ projects }) {
     const active = projects.filter((p) => p.status === "in_progress");
     const activeProjects = active.map((p) => ({
         ...p,
@@ -8,8 +8,6 @@ export function getDashboardStats({ projects, workers, attendance }) {
     return {
         activeSites: active.length,
         totalProjects: projects.length,
-        presentToday: active.reduce((t, p) => t + (attendance[p.id]?.length ?? 0), 0),
-        totalWorkers: workers.length,
         pendingPayments: activeProjects.reduce((t, p) => t + p.budget - p.received, 0),
         activeProjects,
     };

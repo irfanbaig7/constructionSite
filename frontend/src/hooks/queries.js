@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getProjects, getProjectDetails, getOwnerProjectDetails, getUpdate } from "@/services/projectService";
 import { getWorkers } from "@/services/workerService";
-import { getTodayAttendance } from "@/services/attendanceService";
 import { getDashboardData } from "@/services/dashboardService";
 import { getDashboardStats } from "@/lib/dashboardStats";
 import { getOwnerMaterials, getMaterialRequests } from "@/services/materialService";
@@ -18,15 +17,6 @@ export const useOwnerProjectDetails = (id) =>
 export const useUpdate = (id) => useQuery({ queryKey: ["update", id], queryFn: () => getUpdate(id) });
 export const useDashboard = () =>
     useQuery({ queryKey: ["dashboard"], queryFn: async () => getDashboardStats(await getDashboardData()) });
-
-export const useAttendancePage = () =>
-    useQuery({
-        queryKey: ["attendance"],
-        queryFn: async () => {
-            const [projects, workers, map] = await Promise.all([getProjects(), getWorkers(), getTodayAttendance()]);
-            return { sites: projects.filter((p) => p.status === "in_progress"), workers, map };
-        },
-    });
 
 export const useOwnerBundle = (id) =>
     useQuery({

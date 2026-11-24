@@ -8,7 +8,6 @@ import mongoose from "mongoose";
 import { errorHandler } from "./middleware/errorHandler.js";
 import auth from "./routes/auth.js";
 import workers from "./routes/workers.js";
-import attendance from "./routes/attendance.js";
 import projects from "./routes/projects.js";
 import updates from "./routes/updates.js";
 import updateById from "./routes/updateById.js";
@@ -39,7 +38,6 @@ app.get("/api/health", (_req, res) => res.json({ ok: mongoose.connection.readySt
 const routes = {
     "/auth": auth,
     "/workers": workers,
-    "/attendance": attendance,
     "/projects": projects,
     "/projects/:projectId/updates": updates,
     "/projects/:projectId/expenses": expenses,

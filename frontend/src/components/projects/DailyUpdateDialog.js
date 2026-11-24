@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Field from "@/components/ui/Field";
 import { getWorkers } from "@/services/workerService";
-import { getTodayAttendance } from "@/services/attendanceService";
 import { getMaterials } from "@/services/materialService";
 import { addUpdate } from "@/services/projectService";
 import { compressImage } from "@/lib/image";
@@ -26,11 +25,10 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
     const [busy, setBusy] = useState(false);
 
     useEffect(() => {
-        Promise.all([getWorkers(), getTodayAttendance(), getMaterials(projectId)])
-            .then(([w, a, m]) => {
+        Promise.all([getWorkers(), getMaterials(projectId)])
+            .then(([w, m]) => {
                 setWorkers(w);
                 setMaterials(m);
-                setSelected(a[projectId] ?? []); // today's assigned workers come pre-ticked
             })
             .catch((e) => setError(e.message));
     }, [projectId]);

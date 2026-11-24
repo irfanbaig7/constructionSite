@@ -6,7 +6,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { loadProject } from "../middleware/project.js";
 import { uploadImages } from "../middleware/upload.js";
 import { saveImage } from "../config/storage.js";
-import { setSiteWorkers, assertOwnWorkers } from "../utils/attendance.js";
+import { assertOwnWorkers } from "../utils/workers.js";
 import { consumeStock, restoreStock, presentUpdates } from "../utils/materialFlow.js";
 import { HttpError } from "../utils/errors.js";
 import { objectId, jsonField } from "../schemas/common.js";
@@ -51,7 +51,6 @@ router.post("/", requireRole("contractor"), uploadImages("photos", 6), async (re
             workers: ids.length,
             materials: mats.map((m) => `${m.name} ${usage.get(String(m._id))} ${m.unit}`),
         });
-        await setSiteWorkers(req.user._id, String(req.project._id), ids); // attendance stays in sync
         res.status(201).json(update);
     } catch (e) {
         await restoreStock(usage);
