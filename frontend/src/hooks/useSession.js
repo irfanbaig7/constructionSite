@@ -1,15 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getSession } from "@/services/authService";
+import { useSyncExternalStore } from "react";
+import { getSession, subscribeSession } from "@/lib/session";
 
 // Returns the logged-in user (or null until it loads on the client).
 export default function useSession() {
-    const [session, setSession] = useState(null);
-
-    useEffect(() => {
-        setSession(getSession());
-    }, []);
-
-    return session;
+    return useSyncExternalStore(subscribeSession, getSession, () => null);
 }

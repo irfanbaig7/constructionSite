@@ -64,7 +64,7 @@ export default function MaterialRequests({ projectId, requests, onChanged }) {
                             <div className="flex flex-wrap gap-2">
                                 <button type="button" disabled={busyId === r.id} className={`${btn} bg-orange-500 text-white hover:bg-orange-600`}
                                     onClick={() => run(r.id, () => respondRequest(projectId, r.id, "will_bring"))}>
-                                    I'll Arrange It
+                                    I’ll Arrange It
                                 </button>
                                 <button type="button" disabled={busyId === r.id} className={`${btn} border border-white/15 hover:border-orange-500 light:border-slate-300`}
                                     onClick={() => run(r.id, () => respondRequest(projectId, r.id, "ask_contractor"))}>
@@ -75,7 +75,7 @@ export default function MaterialRequests({ projectId, requests, onChanged }) {
 
                         {r.status === "owner_bringing" && (
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm">You're arranging this material.</span>
+                                <span className="text-sm">You’re arranging this material.</span>
                                 <button type="button" className={`${btn} bg-orange-500 text-white hover:bg-orange-600`} onClick={() => setDialog(r)}>
                                     Mark as Delivered
                                 </button>
@@ -86,11 +86,11 @@ export default function MaterialRequests({ projectId, requests, onChanged }) {
                             </div>
                         )}
 
-                        {r.status === "quote_needed" && <p className="text-sm">Waiting for the contractor's price quote.</p>}
+                        {r.status === "quote_needed" && <p className="text-sm">Waiting for the contractor’s price quote.</p>}
 
                         {r.status === "awaiting_payment" && (
                             <div className="flex flex-wrap items-center gap-3">
-                                <p className="text-sm">Contractor's Quote: <span className="font-bold">{formatINRFull(r.amount)}</span> ({r.quantity} {r.unit})</p>
+                                <p className="text-sm">Contractor’s Quote: <span className="font-bold">{formatINRFull(r.amount)}</span> ({r.quantity} {r.unit})</p>
                                 <button type="button" disabled={busyId === r.id} className={`${btn} bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60`}
                                     onClick={() => pay(r)}>
                                     {busyId === r.id ? "Please wait..." : `Pay ${formatINRFull(r.amount)}`}

@@ -1,138 +1,163 @@
-
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+    Building2, CalendarDays, Camera, CheckCircle2, Clock3, IndianRupee,
+    MapPin, MessageCircle, PackageCheck, Phone, WalletCards,
+} from "lucide-react";
 import useSession from "@/hooks/useSession";
 import { useProjects, useOwnerBundle } from "@/hooks/queries";
 import DataState from "@/components/ui/DataState";
-import StatCard from "@/components/dashboard/StatCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import ProgressBar from "@/components/ui/ProgressBar";
 import EmptyState from "@/components/ui/EmptyState";
-import Thumb from "@/components/ui/Thumb";
 import MaterialRequests from "./MaterialRequests";
 import PaymentRequests from "./PaymentRequests";
-import { card, inputClass } from "@/lib/styles";
+import HomeownerUpdateCard from "./HomeownerUpdateCard";
+import { card } from "@/lib/styles";
 import { formatINR, formatUpdateTime } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { sumAmount } from "@/lib/money";
-import { shortTitle } from "@/lib/text";
 
 const DAY = 86400000;
+const OPEN_MATERIAL = ["pending", "owner_bringing", "quote_needed", "awaiting_payment"];
 
-function View({ b, list, selectedId, onPick }) {
+function Metric({ icon: Icon, label, value, note }) {
+    return (
+        <div className="rounded-2xl border border-white/10 bg-black/10 p-4 light:border-slate-200 light:bg-slate-50">
+            <div className="flex items-center gap-2 text-sm font-medium text-white/65 light:text-slate-600">
+                <Icon size={17} aria-hidden /><span>{label}</span>
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight">{value}</p>
+            {note && <p className="mt-1 text-sm text-white/60 light:text-slate-500">{note}</p>}
+        </div>
+    );
+}
+
+function SectionTitle({ eyebrow, title, note }) {
+    return (
+        <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-orange-500">{eyebrow}</p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{title}</h2>
+            {note && <p className="mt-1 max-w-2xl text-sm text-white/60 light:text-slate-600">{note}</p>}
+        </div>
+    );
+}
+
+function View({ b, homeownerName }) {
     const qc = useQueryClient();
     const refresh = () => qc.invalidateQueries();
     if (!b.d) return <EmptyState text="Project not found." />;
 
     const { project: p, payments, updates } = b.d;
     const received = sumAmount(payments);
+    const ownerExpenses = sumAmount(b.e);
+    const paymentPercent = Math.min(100, Math.round((received / p.budget) * 100));
     const totalDays = Math.max(0, Math.round((new Date(p.expectedEnd) - new Date(p.startDate)) / DAY));
     const daysLeft = Math.round((new Date(p.expectedEnd) - new Date()) / DAY);
-    const timeNote = p.status === "completed" ? "Completed" : daysLeft >= 0 ? `${daysLeft} days left` : `${-daysLeft} days overdue`;
+    const timeNote = p.status === "completed" ? "Project completed" : daysLeft >= 0 ? `${daysLeft} days remaining` : `${-daysLeft} days overdue`;
     const phone = (p.contractorPhone ?? "").replace(/\D/g, "");
-
-    const info = [
-        ["Built by", p.contractor ?? "-"],
-        ["Location", p.location],
-        ["Agreed Budget", formatINR(p.budget)],
-        ["Timeline", `${formatDate(p.startDate)} → ${formatDate(p.expectedEnd)}`],
-        ["Duration", `≈ ${Math.max(1, Math.round(totalDays / 30))} months • ${timeNote}`],
-    ];
+    const latest = updates[0];
+    const paymentActions = b.pr.filter((r) => r.status === "pending").length;
+    const materialActions = b.r.filter((r) => OPEN_MATERIAL.includes(r.status)).length;
+    const actionCount = paymentActions + materialActions;
 
     return (
-        <div className="space-y-6">
-            {list.length > 1 && (
-                <select value={selectedId} onChange={(e) => onPick(e.target.value)} className={`max-w-xs ${inputClass}`}>
-                    {list.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </select>
-            )}
+        <div className="space-y-10 pb-8">
+            <header>
+                <div>
+                    <p className="text-sm text-white/60 light:text-slate-600">Welcome back{homeownerName ? `, ${homeownerName.split(" ")[0]}` : ""}</p>
+                    <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Your project, at a glance</h1>
+                    <p className="mt-2 text-sm text-white/60 light:text-slate-600">See what changed, what needs you, and where the budget stands.</p>
+                </div>
+            </header>
 
-            <PaymentRequests projectId={p.id} requests={b.pr} onChanged={refresh} />
-            <MaterialRequests projectId={p.id} requests={b.r} onChanged={refresh} />
+            <section className="overflow-hidden rounded-3xl border border-orange-500/25 bg-gradient-to-br from-orange-500/15 via-white/5 to-blue-500/10 p-5 shadow-2xl shadow-black/10 light:from-orange-50 light:via-white light:to-blue-50 sm:p-7">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20"><Building2 size={24} aria-hidden /></div>
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2"><h2 className="text-2xl font-bold tracking-tight">{p.name}</h2><StatusBadge status={p.status} /></div>
+                                <p className="mt-1 flex items-center gap-1.5 text-sm text-white/60 light:text-slate-600"><MapPin size={15} aria-hidden />{p.location}</p>
+                            </div>
+                        </div>
+                        <div className="mt-6 max-w-xl">
+                            <div className="mb-2 flex items-center justify-between text-sm"><span className="font-semibold">Overall work progress</span><span className="font-bold text-orange-500">{p.progress}%</span></div>
+                            <ProgressBar value={p.progress} showLabel={false} tone="orange" label="Overall work progress" />
+                            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/65 light:text-slate-600">
+                                <span className="flex items-center gap-1.5"><CalendarDays size={15} aria-hidden />Target: {formatDate(p.expectedEnd)}</span>
+                                <span className={`flex items-center gap-1.5 font-medium ${daysLeft < 0 && p.status !== "completed" ? "text-red-400 light:text-red-600" : ""}`}><Clock3 size={15} aria-hidden />{timeNote}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {phone && <div className="flex flex-wrap gap-2">
+                        <a href={`tel:+91${phone}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"><Phone size={17} aria-hidden />Call contractor</a>
+                        <a href={`https://wa.me/91${phone}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold hover:border-orange-500 light:border-slate-300"><MessageCircle size={17} aria-hidden />WhatsApp</a>
+                    </div>}
+                </div>
+                <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <Metric icon={IndianRupee} label="Agreed budget" value={formatINR(p.budget)} note="Total contract value" />
+                    <Metric icon={WalletCards} label="Paid to contractor" value={formatINR(received)} note={`${paymentPercent}% of budget paid`} />
+                    <Metric icon={CalendarDays} label="Project duration" value={`${Math.max(1, Math.round(totalDays / 30))} months`} note={`${formatDate(p.startDate)} – ${formatDate(p.expectedEnd)}`} />
+                    <Metric icon={Camera} label="Latest proof" value={latest ? formatUpdateTime(latest.at) : "Not posted"} note={latest ? `${latest.photos.length} site photos` : "Waiting for first update"} />
+                </div>
+            </section>
 
-            <section className={`rounded-2xl p-5 ${card}`}>
-                <h2 className="text-lg font-bold">Daily Work Updates</h2>
-                {updates.length === 0 ? (
-                    <p className="mt-4 text-sm">No updates have been posted yet.</p>
-                ) : (
-                    <ul className="mt-4 max-h-96 divide-y divide-white/10 overflow-y-auto light:divide-slate-200">
-                        {updates.map((u) => (
-                            <li key={u.id}>
-                                <Link href={`/homeowner/update/${u.id}`} className="flex items-center justify-between gap-3 py-3 hover:text-orange-500">
-                                    <div className="min-w-0">
-                                        <p className="text-xs font-medium">{formatUpdateTime(u.at)}</p>
-                                        <p className="truncate font-semibold">{shortTitle(u.summary)}</p>
-                                        <p className="text-xs">📷 {u.photos.length} photos • 👷 {u.workers} workers</p>
-                                    </div>
-                                    <span aria-hidden className="text-2xl">›</span>
+            <section id="updates" className="scroll-mt-24 space-y-4">
+                <SectionTitle eyebrow="Latest from site" title="See what happened at your site" note="Daily progress, people on site, and photo proof—even when you cannot be there in person." />
+                {updates.length === 0 ? <EmptyState text="No work updates have been posted yet." /> : (
+                    <div className="space-y-4">
+                        <HomeownerUpdateCard update={latest} latest />
+
+                        {updates.length > 1 && (
+                            <div className="flex justify-center pt-1">
+                                <Link href={`/homeowner/updates/${p.id}`} className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold transition hover:border-orange-500 hover:text-orange-500 light:border-slate-300">
+                                    View more updates
                                 </Link>
-                            </li>
-                        ))}
-                    </ul>
+                            </div>
+                        )}
+                    </div>
                 )}
             </section>
 
-            <div className="grid gap-6 lg:grid-cols-3">
-                <section className={`rounded-2xl p-5 ${card}`}>
-                    <div className="flex items-center gap-3">
-                        <Thumb className="h-16 w-16" />
-                        <div className="min-w-0">
-                            <h1 className="truncate text-xl font-bold">{p.name}</h1>
-                            <StatusBadge status={p.status} />
-                        </div>
-                    </div>
-                    <dl className="mt-5 space-y-3">
-                        {info.map(([k, v]) => (
-                            <div key={k}><dt className="text-xs font-medium">{k}</dt><dd className="font-semibold">{v}</dd></div>
-                        ))}
-                    </dl>
-                    {phone && (
-                        <div className="mt-5 flex gap-2">
-                            <a href={`tel:+91${phone}`} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">📞 Call</a>
-                            <a href={`https://wa.me/91${phone}`} target="_blank" rel="noreferrer" className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold hover:border-orange-500 light:border-slate-300">💬 WhatsApp</a>
-                        </div>
-                    )}
-                </section>
-
-                <div className="space-y-4 lg:col-span-2">
-                    <section className={`rounded-2xl p-5 ${card}`}>
-                        <p className="mb-2 text-sm font-medium">Work Progress</p>
-                        <ProgressBar value={p.progress} />
-                    </section>
-                    <section className={`rounded-2xl p-5 ${card}`}>
-                        <div className="flex flex-wrap items-end justify-between gap-2">
-                            <div>
-                                <p className="text-sm font-medium">Paid to Contractor</p>
-                                <p className="text-3xl font-bold">{formatINR(received)}</p>
-                            </div>
-                            <p className="text-sm">Budget {formatINR(p.budget)} • <span className="font-semibold">Remaining {formatINR(p.budget - received)}</span></p>
-                        </div>
-                        <div className="mt-3"><ProgressBar value={Math.round((received / p.budget) * 100)} /></div>
-                    </section>
-                    <StatCard label="Total Expenses So Far" value={formatINR(received + sumAmount(b.e))} icon="🧾" tone="orange"
-                        href={`/homeowner/expenses/${p.id}`} hint="View / manage expense details →" />
+            <section id="actions" className="scroll-mt-24 space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <SectionTitle eyebrow="Action centre" title={actionCount ? `${actionCount} item${actionCount === 1 ? "" : "s"} need your attention` : "You're all caught up"} note="Payments and material decisions that are waiting for you." />
+                    {actionCount > 0 && <span className="w-fit rounded-full bg-orange-500/15 px-3 py-1.5 text-sm font-semibold text-orange-500">{actionCount} open</span>}
                 </div>
-            </div>
-
-            <section className={`rounded-2xl p-5 ${card}`}>
-                <h2 className="text-lg font-bold">Material Usage</h2>
-                {b.m.length === 0 ? (
-                    <p className="mt-3 text-sm">No materials have arrived at the site yet.</p>
+                {actionCount === 0 ? (
+                    <div className={`flex items-center gap-3 rounded-2xl p-5 ${card}`}><CheckCircle2 className="text-green-500" size={24} aria-hidden /><div><p className="font-semibold">No pending approvals or payments</p><p className="text-sm text-white/60 light:text-slate-600">The next request will appear here.</p></div></div>
                 ) : (
-                    <div className="mt-4 space-y-4">
-                        {b.m.map((m) => (
-                            <div key={m.id}>
-                                <p className="text-sm font-semibold">
-                                    {m.name}: {m.used.toLocaleString("en-IN")} {m.unit} used{m.target > 0 && `, ${m.target.toLocaleString("en-IN")} ${m.unit} required in total`}
-                                </p>
-                                {m.target > 0 && <ProgressBar value={Math.min(100, Math.round((m.used / m.target) * 100))} />}
-                            </div>
-                        ))}
-                    </div>
+                    <div className="grid gap-4 lg:grid-cols-2"><PaymentRequests projectId={p.id} requests={b.pr} onChanged={refresh} /><MaterialRequests projectId={p.id} requests={b.r} onChanged={refresh} /></div>
                 )}
+            </section>
+
+            <section id="overview" className="scroll-mt-24 space-y-4">
+                <SectionTitle eyebrow="Project overview" title="Money and materials, without the clutter" note="High-level numbers first; detailed records stay one tap away." />
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <article className={`rounded-2xl p-5 sm:p-6 ${card}`}>
+                        <div className="flex justify-between"><div><p className="text-sm text-white/60 light:text-slate-600">Paid to contractor</p><p className="mt-1 text-3xl font-bold">{formatINR(received)}</p></div><WalletCards className="text-orange-500" aria-hidden /></div>
+                        <div className="mt-5"><ProgressBar value={paymentPercent} showLabel={false} tone="orange" label="Budget paid" /></div>
+                        <div className="mt-3 flex justify-between gap-4 text-sm"><span className="text-white/60 light:text-slate-600">Remaining balance</span><strong>{formatINR(p.budget - received)}</strong></div>
+                        <div className="mt-2 flex justify-between gap-4 text-sm"><span className="text-white/60 light:text-slate-600">Your additional expenses</span><strong>{formatINR(ownerExpenses)}</strong></div>
+                        <Link href={`/homeowner/expenses/${p.id}`} className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold hover:border-orange-500 light:border-slate-300">View expense details</Link>
+                    </article>
+                    <article className={`rounded-2xl p-5 sm:p-6 ${card}`}>
+                        <div className="flex justify-between"><div><p className="text-sm text-white/60 light:text-slate-600">Materials tracked</p><p className="mt-1 text-3xl font-bold">{b.m.length}</p></div><PackageCheck className="text-blue-400 light:text-blue-600" aria-hidden /></div>
+                        {b.m.length === 0 ? <p className="mt-5 text-sm text-white/60 light:text-slate-600">Usage will appear after the first delivery and site update.</p> : <div className="mt-5 space-y-4">{b.m.slice(0, 4).map((m) => {
+                            const pct = m.target > 0 ? Math.min(100, Math.round((m.used / m.target) * 100)) : 0;
+                            return <div key={m.id}><div className="mb-1.5 flex justify-between gap-4 text-sm"><strong>{m.name}</strong><span className="text-white/60 light:text-slate-600">{m.used.toLocaleString("en-IN")} {m.unit}{m.target > 0 ? ` of ${m.target.toLocaleString("en-IN")}` : " used"}</span></div>{m.target > 0 && <ProgressBar value={pct} showLabel={false} label={`${m.name} usage`} />}</div>;
+                        })}</div>}
+                    </article>
+                </div>
+                <div className={`grid gap-4 rounded-2xl p-5 sm:grid-cols-2 lg:grid-cols-4 ${card}`}>
+                    <div><p className="text-sm text-white/60 light:text-slate-600">Built by</p><p className="mt-1 font-semibold">{p.contractor ?? "–"}</p></div>
+                    <div><p className="text-sm text-white/60 light:text-slate-600">Project type</p><p className="mt-1 font-semibold">{p.type || "–"}</p></div>
+                    <div><p className="text-sm text-white/60 light:text-slate-600">Contractor payments</p><p className="mt-1 font-semibold">{formatINR(received)}</p></div>
+                    <div><p className="text-sm text-white/60 light:text-slate-600">Total cash outflow</p><p className="mt-1 font-semibold">{formatINR(received + ownerExpenses)}</p></div>
+                </div>
             </section>
         </div>
     );
@@ -141,20 +166,15 @@ function View({ b, list, selectedId, onPick }) {
 export default function HomeDashboard() {
     const session = useSession();
     const projects = useProjects();
-    const [picked, setPicked] = useState(null);
-    const selectedId = picked ?? projects.data?.[0]?.id;
+    const selectedId = projects.data?.[0]?.id;
     const bundle = useOwnerBundle(selectedId);
 
-    if (!session) return <p>Loading...</p>;
+    if (!session) return <p className="py-12 text-center text-sm">Loading your dashboard…</p>;
     return (
-        <DataState query={projects}>
-            {(list) =>
-                list.length === 0 ? (
-                    <EmptyState text={`No projects are linked to your email (${session.email}). Ask your contractor to use this email when creating the project.`} />
-                ) : (
-                    <DataState query={bundle}>{(b) => <View b={b} list={list} selectedId={selectedId} onPick={setPicked} />}</DataState>
-                )
-            }
-        </DataState>
+        <DataState query={projects}>{(list) => list.length === 0 ? (
+            <EmptyState text={`No projects are linked to your email (${session.email}). Ask your contractor to use this email when creating the project.`} />
+        ) : (
+            <DataState query={bundle}>{(b) => <View b={b} homeownerName={session.name} />}</DataState>
+        )}</DataState>
     );
 }

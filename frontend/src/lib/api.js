@@ -33,6 +33,8 @@ export async function api(path, { method = "GET", body } = {}) {
     const data = await res.json().catch(() => ({}));
     if (res.status === 401 && !path.startsWith("/auth/")) {
         clearSession();
+        // This utility runs outside React, so a full redirect is intentional here.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.assign("/login");
     }
     if (!res.ok) throw new ApiError(data.message || "Something went wrong.", res.status);

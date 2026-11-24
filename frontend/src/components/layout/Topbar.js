@@ -49,10 +49,6 @@ export default function Topbar({ onMenuClick, profileHref }) {
 
             <div className="flex items-center gap-2 sm:gap-3">
                 <ThemeToggle />
-                <button type="button" aria-label="Notifications" className={iconButton}>
-                    🔔
-                </button>
-
                 <div ref={ref} className="relative">
                     <button
                         type="button"

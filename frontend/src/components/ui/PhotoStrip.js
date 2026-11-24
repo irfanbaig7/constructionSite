@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { thumb, large } from "@/lib/cloudinary";
 
-export default function PhotoStrip({ photos, size = "h-20 w-20" }) {
+export default function PhotoStrip({ photos, size = "h-20 w-20", featured = false }) {
     const [index, setIndex] = useState(null);
     const count = photos.length;
 
@@ -24,14 +24,41 @@ export default function PhotoStrip({ photos, size = "h-20 w-20" }) {
 
     return (
         <>
-            <div className="flex flex-wrap gap-2">
-                {photos.map((p, i) => (
-                    <button key={p.url} type="button" onClick={() => setIndex(i)} aria-label={`Open photo ${i + 1}`}>
+            {featured ? (
+                <div className="space-y-3">
+                    <button
+                        type="button"
+                        onClick={() => setIndex(0)}
+                        aria-label="Open primary site photo"
+                        className="group relative block aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                    >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={thumb(p.url)} alt={`Site photo ${i + 1}`} className={`${size} rounded-xl object-cover transition hover:opacity-80`} />
+                        <img src={large(photos[0].url)} alt="Primary site proof" className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.01]" />
+                        <span className="absolute bottom-3 right-3 rounded-xl bg-black/65 px-3 py-2 text-sm font-semibold text-white backdrop-blur">
+                            View photo · {count} {count === 1 ? "photo" : "photos"}
+                        </span>
                     </button>
-                ))}
-            </div>
+                    {count > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {photos.slice(1).map((p, i) => (
+                                <button key={p.url} type="button" onClick={() => setIndex(i + 1)} aria-label={`Open photo ${i + 2}`} className="shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={thumb(p.url)} alt={`Site proof ${i + 2}`} className="h-16 w-16 rounded-xl object-cover transition hover:opacity-80 sm:h-20 sm:w-20" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="flex flex-wrap gap-2">
+                    {photos.map((p, i) => (
+                        <button key={p.url} type="button" onClick={() => setIndex(i)} aria-label={`Open photo ${i + 1}`}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={thumb(p.url)} alt={`Site photo ${i + 1}`} className={`${size} rounded-xl object-cover transition hover:opacity-80`} />
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {index !== null && (
                 <div onClick={() => setIndex(null)} className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4">

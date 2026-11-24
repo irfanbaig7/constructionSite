@@ -13,6 +13,8 @@ import { getEntries } from "@/services/ledgerService";
 export const useProjects = () => useQuery({ queryKey: ["projects"], queryFn: getProjects });
 export const useWorkers = () => useQuery({ queryKey: ["workers"], queryFn: getWorkers });
 export const useProjectDetails = (id) => useQuery({ queryKey: ["project", id], queryFn: () => getProjectDetails(id) });
+export const useOwnerProjectDetails = (id) =>
+    useQuery({ queryKey: ["owner-project", id], queryFn: () => getOwnerProjectDetails(id), enabled: !!id });
 export const useUpdate = (id) => useQuery({ queryKey: ["update", id], queryFn: () => getUpdate(id) });
 export const useDashboard = () =>
     useQuery({ queryKey: ["dashboard"], queryFn: async () => getDashboardStats(await getDashboardData()) });
