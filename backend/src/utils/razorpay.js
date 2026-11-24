@@ -1,18 +1,26 @@
 import crypto from "crypto";
-import Razorpay from "razorpay";
 import { env } from "../config/env.js";
 import { HttpError } from "./errors.js";
 import { requireRole } from "../middleware/auth.js";
 
-let client;
-function rz() {
+function credentials() {
     if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) throw new HttpError(503, "Payments abhi set up nahi hain.");
-    return (client ??= new Razorpay({ key_id: env.RAZORPAY_KEY_ID, key_secret: env.RAZORPAY_KEY_SECRET }));
+    return Buffer.from(`${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`).toString("base64");
 }
 
 async function createOrder(rupees, receipt) {
     try {
-        const o = await rz().orders.create({ amount: Math.round(rupees * 100), currency: "INR", receipt: receipt.slice(0, 40) });
+        const response = await fetch("https://api.razorpay.com/v1/orders", {
+            method: "POST",
+            signal: AbortSignal.timeout(15_000),
+            headers: {
+                Authorization: `Basic ${credentials()}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount: Math.round(rupees * 100), currency: "INR", receipt: receipt.slice(0, 40) }),
+        });
+        const o = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(o.error?.description || `Razorpay returned ${response.status}`);
         return { orderId: o.id, amount: o.amount, currency: o.currency, keyId: env.RAZORPAY_KEY_ID };
     } catch (e) {
         if (e instanceof HttpError) throw e;
