@@ -12,7 +12,7 @@ import Logo from "@/components/Logo"
 const iconButton =
     "flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-lg hover:bg-white/10 light:border-slate-300 light:hover:bg-slate-200";
 
-export default function Topbar({ onMenuClick, profileHref }) {
+export default function Topbar({ onMenuClick, profileHref, homeHref = "/" }) {
     const router = useRouter();
     const session = useSession();
     const [open, setOpen] = useState(false);
@@ -44,7 +44,7 @@ export default function Topbar({ onMenuClick, profileHref }) {
                     <div className="hidden lg:block" />
                 </>
             ) : (
-                <Logo />
+                <Logo href={homeHref} />
             )}
 
             <div className="flex items-center gap-2 sm:gap-3">

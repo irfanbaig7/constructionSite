@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Logo from "@/components/Logo";
 import useSession from "@/hooks/useSession";
 import { navigation } from "@/config/navigation";
+import { dashboardFor } from "@/lib/routes";
 
 export default function Sidebar({ role, open, onClose }) {
     const pathname = usePathname();
@@ -21,7 +22,7 @@ export default function Sidebar({ role, open, onClose }) {
                     }`}
             >
                 <div className="px-2 py-3">
-                    <Logo />
+                    <Logo href={dashboardFor(role)} />
                 </div>
 
                 <nav className="mt-4 flex-1 space-y-1">
