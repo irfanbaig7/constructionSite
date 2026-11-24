@@ -51,8 +51,12 @@ function Body({ data: { sites, workers, map } }) {
                                 {ids.map((id) => (
                                     <li key={id} className="flex items-center gap-2 rounded-full border border-white/15 py-1 pl-3 pr-1 text-sm light:border-slate-300">
                                         {byId[id]?.name}
-                                        <button type="button" aria-label={`Remove ${byId[id]?.name}`} onClick={() => set(s.id, ids.filter((x) => x !== id))}
-                                            className="flex h-6 w-6 items-center justify-center rounded-full text-xs hover:bg-red-500/20 hover:text-red-500">✕</button>
+                                        {open && (
+                                            <button type="button" onClick={() => set(s.id, ids.filter((x) => x !== id))}
+                                                className="rounded-full px-2 py-0.5 text-xs font-semibold text-red-500 hover:bg-red-500/10">
+                                                Remove
+                                            </button>
+                                        )}
                                     </li>
                                 ))}
                             </ul>

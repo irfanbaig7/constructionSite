@@ -7,8 +7,7 @@ import { text, amount, dateStr } from "../schemas/common.js";
 export default childRouter({
     Model: LedgerEntry,
     who: "homeowner",
-    deleteFilter: { auto: { $ne: true } }, // app-created entries cannot be deleted
-    missing: "Entry not found or cannot be deleted.",
+    allowDelete: false,
     schema: z.object({
         category: z.enum(["Material", "Labour", "Transport", "Tools & Equipment", "Other"]),
         title: text(120),

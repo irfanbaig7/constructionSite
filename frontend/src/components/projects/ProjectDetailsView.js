@@ -27,7 +27,7 @@ function Body({ data }) {
         overview: <OverviewTab project={project} payments={payments} expenses={expenses} workerPayments={workerPayments} onEdit={open("edit")} />,
         updates: <DailyUpdatesTab updates={updates} />,
         materials: <MaterialsTab projectId={project.id} materials={materials} requests={requests} onChanged={refresh} />,
-        expenses: <SiteExpensesTab projectId={project.id} expenses={expenses} onAdd={open("expense")} onChanged={refresh} />,
+        expenses: <SiteExpensesTab expenses={expenses} onAdd={open("expense")} />,
         payments: (
             <PaymentsTab project={project} payments={payments} paymentRequests={paymentRequests} workerPayments={workerPayments}
                 onAdd={open("payment")} onAddWorker={open("workerPayment")} onChanged={refresh} />

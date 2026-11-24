@@ -8,25 +8,12 @@ import { card } from "@/lib/styles";
 import { formatDate } from "@/lib/date";
 import { formatINRFull, sumAmount } from "@/lib/money";
 import { expenseCategories } from "@/config/expenseCategories";
-import { deleteExpense } from "@/services/projectService";
 
-export default function SiteExpensesTab({ projectId, expenses, onAdd, onChanged }) {
+export default function SiteExpensesTab({ expenses, onAdd }) {
     const [filter, setFilter] = useState("All");
-    const [error, setError] = useState("");
 
     const list = filter === "All" ? expenses : expenses.filter((e) => e.category === filter);
     const icon = (name) => expenseCategories.find((c) => c.name === name)?.icon ?? "📌";
-
-    async function remove(id) {
-        if (!window.confirm("Are you sure you want to delete this expense?")) return;
-        setError("");
-        try {
-            await deleteExpense(projectId, id);
-            onChanged();
-        } catch (e) {
-            setError(e.message);
-        }
-    }
 
     return (
         <div className="space-y-4">
@@ -39,7 +26,6 @@ export default function SiteExpensesTab({ projectId, expenses, onAdd, onChanged 
             </div>
 
             <p className="text-sm">🔒 These are your personal expenses (tools, transport, refreshments). Only you can see them; they are not visible to the homeowner.</p>
-            {error && <p className="text-sm text-red-500">{error}</p>}
 
             <div className="flex flex-wrap gap-2">
                 {["All", ...expenseCategories.map((c) => c.name)].map((name) => (
@@ -65,11 +51,7 @@ export default function SiteExpensesTab({ projectId, expenses, onAdd, onChanged 
                                     <p className="text-xs">{e.category} • {formatDate(e.date)}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <p className="whitespace-nowrap font-bold">{formatINRFull(e.amount)}</p>
-                                <button type="button" aria-label="Delete" onClick={() => remove(e.id)}
-                                    className="flex h-7 w-7 items-center justify-center rounded-full text-xs hover:bg-red-500/20 hover:text-red-500">✕</button>
-                            </div>
+                            <p className="whitespace-nowrap font-bold">{formatINRFull(e.amount)}</p>
                         </li>
                     ))}
                 </ul>

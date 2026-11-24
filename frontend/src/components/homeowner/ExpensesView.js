@@ -3,9 +3,8 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
 import { useOwnerLedger } from "@/hooks/queries";
-import { addEntry, deleteEntry } from "@/services/ledgerService";
+import { addEntry } from "@/services/ledgerService";
 import { ledgerCategories } from "@/config/ledgerCategories";
 import DataState from "@/components/ui/DataState";
 import BackLink from "@/components/ui/BackLink";
@@ -18,7 +17,7 @@ import { formatINRFull, sumAmount } from "@/lib/money";
 import { formatDate, todayKey } from "@/lib/date";
 
 const icon = (name) => ledgerCategories.find((c) => c.name === name)?.icon ?? "📌";
-const Row = ({ title, sub, amount, action }) => (
+const Row = ({ title, sub, amount }) => (
     <li className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
             <p className="truncate font-semibold">{title}</p>
@@ -26,7 +25,6 @@ const Row = ({ title, sub, amount, action }) => (
         </div>
         <div className="flex items-center gap-3">
             <p className="whitespace-nowrap font-bold">{formatINRFull(amount)}</p>
-            {action}
         </div>
     </li>
 );
@@ -35,7 +33,6 @@ export default function ExpensesView({ id }) {
     const qc = useQueryClient();
     const [adding, setAdding] = useState(false);
     const refresh = () => qc.invalidateQueries();
-    const remove = (entryId) => deleteEntry(id, entryId).then(refresh).catch((e) => toast.error(e.message));
 
     return (
         <div className="space-y-8">
@@ -68,11 +65,7 @@ export default function ExpensesView({ id }) {
                             {entries.length === 0 ? <EmptyState text="Record your expenses here." /> : (
                                 <ul className={`divide-y divide-white/10 rounded-2xl light:divide-slate-200 ${card}`}>
                                     {entries.map((r) => (
-                                        <Row key={r.id} title={`${icon(r.category)} ${r.title}`} sub={`${r.category} • ${formatDate(r.date)}`} amount={r.amount}
-                                            action={!r.auto && (
-                                                <button type="button" aria-label="Delete entry" onClick={() => remove(r.id)}
-                                                    className="flex h-7 w-7 items-center justify-center rounded-full text-xs hover:bg-red-500/20 hover:text-red-500">✕</button>
-                                            )} />
+                                        <Row key={r.id} title={`${icon(r.category)} ${r.title}`} sub={`${r.category} • ${formatDate(r.date)}`} amount={r.amount} />
                                     ))}
                                 </ul>
                             )}

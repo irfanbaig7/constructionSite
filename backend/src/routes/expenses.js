@@ -6,6 +6,7 @@ import { text, amount, dateStr } from "../schemas/common.js";
 export default childRouter({
     Model: Expense,
     who: "contractor",
+    allowDelete: false,
     missing: "Expense not found.",
     schema: z.object({
         category: z.enum(["Tools & Equipment", "Transport", "Food & Chai", "Other"]),

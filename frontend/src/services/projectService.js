@@ -44,7 +44,6 @@ export const editProject = (id, patch) => api(`/projects/${id}`, { method: "PATC
 
 export const addExpense = (id, { category, title, date, amount }) =>
     api(`/projects/${id}/expenses`, { method: "POST", body: { category, title, date, amount: Number(amount) } });
-export const deleteExpense = (id, expenseId) => api(`/projects/${id}/expenses/${expenseId}`, { method: "DELETE" });
 
 export const addWorkerPayment = (id, { workerId, amount, date, note }) =>
     api(`/projects/${id}/worker-payments`, { method: "POST", body: { workerId, amount: Number(amount), date, note } });
