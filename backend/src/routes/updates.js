@@ -18,7 +18,9 @@ const body = z.object({
     summary: z.string().trim().min(1, "Kaam likho.").max(2000),
     workerIds: jsonField(z.array(objectId).min(1, "Kam se kam 1 worker chuno.").max(500)),
     materialUsage: jsonField(z.array(z.object({ materialId: objectId, quantity: z.coerce.number().positive() })).max(50)),
+    at: z.iso.datetime().optional(), // date and time of the work, filled by the contractor
 });
+
 
 router.get("/", async (req, res) => {
     const list = await DailyUpdate.find({ projectId: req.project._id }).sort({ at: -1 });
@@ -26,7 +28,7 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", requireRole("contractor"), uploadImages("photos", 6), async (req, res) => {
-    const { summary, workerIds, materialUsage } = body.parse(req.body);
+    const { summary, workerIds, materialUsage, at } = body.parse(req.body);
     if (!req.files?.length) throw new HttpError(400, "Add at least 1 photo as proof.");
 
     const ids = [...new Set(workerIds)];
@@ -42,6 +44,7 @@ router.post("/", requireRole("contractor"), uploadImages("photos", 6), async (re
         const photos = await Promise.all(req.files.map((f) => saveImage(f.buffer, String(req.project._id))));
         const update = await DailyUpdate.create({
             projectId: req.project._id,
+            ...(at && { at: new Date(at) }),
             summary,
             photos,
             workerIds: ids,

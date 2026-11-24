@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -20,6 +19,8 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
     const [photos, setPhotos] = useState([]); // { blob, preview }
     const [usage, setUsage] = useState([]); // { materialId, quantity }
     const [summary, setSummary] = useState("");
+    const [date, setDate] = useState("");
+    const [time, setTime] = useState("");
     const [query, setQuery] = useState("");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
@@ -58,6 +59,7 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
 
         const fd = new FormData();
         fd.append("summary", summary);
+        fd.append("at", new Date(`${date}T${time}`).toISOString());
         fd.append("workerIds", JSON.stringify(selected));
         fd.append("materialUsage", JSON.stringify(usage.map((r) => ({ materialId: r.materialId, quantity: Number(r.quantity) }))));
         photos.forEach((p, i) => fd.append("photos", p.blob, `photo-${i + 1}.jpg`));
@@ -86,6 +88,13 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
 
                 <Field label="What work was done today?" name="summary" as="textarea" rows={3} required
                     value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="e.g. Slab shuttering completed" />
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Work date" name="date" type="date" required
+                        value={date} onChange={(e) => setDate(e.target.value)} />
+                    <Field label="Time" name="time" type="time" required
+                        value={time} onChange={(e) => setTime(e.target.value)} />
+                </div>
 
                 <div>
                     <p className="mb-1.5 text-sm font-medium">Photos ({photos.length}/{MAX_PHOTOS})</p>
