@@ -48,8 +48,6 @@ export const deleteExpense = (id, expenseId) => api(`/projects/${id}/expenses/${
 
 export const addWorkerPayment = (id, { workerId, amount, date, note }) =>
     api(`/projects/${id}/worker-payments`, { method: "POST", body: { workerId, amount: Number(amount), date, note } });
-export const deleteWorkerPayment = (id, paymentId) =>
-    api(`/projects/${id}/worker-payments/${paymentId}`, { method: "DELETE" });
 
 // formData: summary, workerIds (JSON), materialUsage (JSON), photos (files)
 export const addUpdate = (id, formData) => api(`/projects/${id}/updates`, { method: "POST", body: formData });

@@ -10,7 +10,6 @@ import { card } from "@/lib/styles";
 import { formatINR } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { formatINRFull, sumAmount } from "@/lib/money";
-import { deleteWorkerPayment } from "@/services/projectService";
 import { cancelPaymentRequest } from "@/services/paymentService";
 
 export default function PaymentsTab({ project, payments, paymentRequests, workerPayments, onAdd, onAddWorker, onChanged }) {
@@ -23,17 +22,6 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
     const perWorker = Object.entries(
         workerPayments.reduce((acc, p) => ({ ...acc, [p.workerName]: (acc[p.workerName] ?? 0) + p.amount }), {})
     );
-
-    async function remove(id) {
-        if (!window.confirm("Are you sure you want to delete this payment?")) return;
-        setError("");
-        try {
-            await deleteWorkerPayment(project.id, id);
-            onChanged();
-        } catch (e) {
-            setError(e.message);
-        }
-    }
 
     const openRequests = paymentRequests.filter((r) => r.status === "pending");
 
@@ -132,11 +120,7 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
                                     <p className="truncate font-semibold">{p.workerName}</p>
                                     <p className="text-xs">{formatDate(p.date)}{p.note && ` • ${p.note}`}</p>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <p className="font-bold">{formatINRFull(p.amount)}</p>
-                                    <button type="button" aria-label="Delete" onClick={() => remove(p.id)}
-                                        className="flex h-7 w-7 items-center justify-center rounded-full text-xs hover:bg-red-500/20 hover:text-red-500">✕</button>
-                                </div>
+                                <p className="font-bold">{formatINRFull(p.amount)}</p>
                             </li>
                         ))}
                     </ul>

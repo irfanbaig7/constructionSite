@@ -9,6 +9,7 @@ import { objectId, amount, dateStr } from "../schemas/common.js";
 export default childRouter({
     Model: WorkerPayment,
     who: "contractor",
+    allowDelete: false,
     missing: "Payment not found.",
     schema: z.object({ workerId: objectId, amount, date: dateStr, note: z.string().trim().max(200).default("") }),
     build: async (req, { workerId }) => {
