@@ -24,7 +24,7 @@ export default function Hero() {
                     One place for contractors and homeowners: daily work, materials and expenses, all backed by proof.
                 </p>
                 <ul className={`mt-5 space-y-3 ${text}`}>
-                    {["Daily Work Updates", "Material Tracking", "AI Progress Insights"].map((t) => (
+                    {["Daily Work Updates", "Material Tracking", "Photo Proof"].map((t) => (
                         <li key={t} className="flex items-center gap-3">
                             <span className="h-2.5 w-2.5 rounded-full bg-orange-500" /> {t}
                         </li>

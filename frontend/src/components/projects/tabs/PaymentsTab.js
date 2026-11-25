@@ -64,10 +64,10 @@ export default function PaymentsTab({ project, payments, paymentRequests, worker
                                     <p className="font-semibold">{r.label}: {formatINRFull(r.amount)}</p>
                                     <p className="text-xs">Awaiting homeowner payment{r.note && ` • ${r.note}`}</p>
                                 </div>
-                                <button type="button" onClick={() => cancel(r.id)}
+                                {!r.orderId && <button type="button" onClick={() => cancel(r.id)}
                                     className="rounded-md border border-white/15 px-2.5 py-1 text-xs font-medium hover:border-red-500 hover:text-red-500 light:border-slate-300">
                                     Cancel
-                                </button>
+                                </button>}
                             </li>
                         ))}
                     </ul>

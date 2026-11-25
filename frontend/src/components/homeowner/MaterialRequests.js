@@ -9,7 +9,7 @@ import { formatINRFull } from "@/lib/money";
 import { openCheckout } from "@/lib/razorpay";
 import { respondRequest, deliverRequest, createPayOrder, verifyPay } from "@/services/materialService";
 
-const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment"];
+const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment", "paid_awaiting_delivery"];
 const btn = "rounded-lg px-3 py-2 text-sm font-semibold";
 
 export default function MaterialRequests({ projectId, requests, onChanged }) {
@@ -87,13 +87,14 @@ export default function MaterialRequests({ projectId, requests, onChanged }) {
                         )}
 
                         {r.status === "quote_needed" && <p className="text-sm">Waiting for the contractor’s price quote.</p>}
+                        {r.status === "paid_awaiting_delivery" && <p className="text-sm">Test payment confirmed. Waiting for the contractor to confirm delivery.</p>}
 
                         {r.status === "awaiting_payment" && (
                             <div className="flex flex-wrap items-center gap-3">
                                 <p className="text-sm">Contractor’s Quote: <span className="font-bold">{formatINRFull(r.amount)}</span> ({r.quantity} {r.unit})</p>
                                 <button type="button" disabled={busyId === r.id} className={`${btn} bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60`}
                                     onClick={() => pay(r)}>
-                                    {busyId === r.id ? "Please wait..." : `Pay ${formatINRFull(r.amount)}`}
+                                    {busyId === r.id ? "Please wait..." : `Test payment · ${formatINRFull(r.amount)}`}
                                 </button>
                             </div>
                         )}

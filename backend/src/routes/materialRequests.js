@@ -1,5 +1,6 @@
 
 import { Router } from "express";
+import mongoose from "mongoose";
 import { z } from "zod";
 import Material from "../models/Material.js";
 import MaterialRequest from "../models/MaterialRequest.js";
@@ -12,7 +13,7 @@ import { HttpError } from "../utils/errors.js";
 import { today } from "../utils/today.js";
 import { text, amount } from "../schemas/common.js";
 
-const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment"];
+const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment", "paid_awaiting_delivery"];
 const CI = { locale: "en", strength: 2 };
 const qty = z.coerce.number().positive("Quantity must be greater than 0.");
 const nonNeg = z.coerce.number().min(0).default(0);
@@ -55,59 +56,84 @@ router.post("/", contractor, async (req, res) => {
 });
 
 router.post("/:rid/cancel", contractor, async (req, res) => {
-    const r = await find(req, OPEN);
-    r.status = "cancelled";
-    res.json(await r.save());
+    const r = await MaterialRequest.findOneAndUpdate(
+        { _id: req.params.rid, projectId: req.project._id, status: { $in: OPEN }, orderId: null, paymentId: null },
+        { status: "cancelled" }, { returnDocument: "after" },
+    );
+    if (!r) throw new HttpError(409, "This request is closed or checkout has already started.");
+    res.json(r);
 });
 
 // Contractor sends a price after the homeowner said "you bring it".
 router.post("/:rid/quote", contractor, async (req, res) => {
     const b = z.object({ amount, quantity: qty.optional() }).parse(req.body);
     const r = await find(req, ["quote_needed", "awaiting_payment"]);
-    r.set({ amount: b.amount, quantity: b.quantity ?? r.quantity, status: "awaiting_payment", orderId: undefined });
-    res.json(await r.save());
+    const quoted = await MaterialRequest.findOneAndUpdate(
+        { _id: r._id, status: r.status, orderId: null, updatedAt: r.updatedAt },
+        { amount: b.amount, quantity: b.quantity ?? r.quantity, status: "awaiting_payment" }, { returnDocument: "after" },
+    );
+    if (!quoted) throw new HttpError(409, "This quote changed or checkout has already started.");
+    res.json(quoted);
 });
 
 router.post("/:rid/respond", homeowner, async (req, res) => {
     const { action } = z.object({ action: z.enum(["will_bring", "ask_contractor"]) }).parse(req.body);
     const r = await find(req, ["pending", "owner_bringing"]);
     if (action === "will_bring" && r.status !== "pending") throw new HttpError(409, "Invalid action.");
-    r.status = action === "will_bring" ? "owner_bringing" : "quote_needed";
-    res.json(await r.save());
+    const changed = await MaterialRequest.findOneAndUpdate(
+        { _id: r._id, status: r.status }, { status: action === "will_bring" ? "owner_bringing" : "quote_needed" },
+        { returnDocument: "after" },
+    );
+    if (!changed) throw new HttpError(409, "This request has changed.");
+    res.json(changed);
 });
 
 // Homeowner brought it himself: cost goes only to his own notebook.
 router.post("/:rid/deliver", homeowner, async (req, res) => {
     const { quantity, amount: spent } = z.object({ quantity: qty, amount: nonNeg }).parse(req.body);
-    const r = await find(req, ["pending", "owner_bringing"]);
-    const done = await MaterialRequest.findOneAndUpdate(
-        { _id: r._id, status: { $in: ["pending", "owner_bringing"] } },
-        { status: "fulfilled", source: "owner", deliveredQty: quantity, fulfilledAt: new Date() },
-        { new: true }
-    );
-    if (!done) throw new HttpError(409, "This request has already been fulfilled.");
-    await addToStock(req.project._id, done, quantity);
-    if (spent > 0)
-        await LedgerEntry.create({ projectId: req.project._id, category: "Material", title: `${done.name} ${quantity} ${done.unit}`, date: today(), amount: spent, auto: true });
+    const done = await recordDelivery(req, ["pending", "owner_bringing"], "owner", quantity, spent);
     res.json(done);
 });
+
+router.post("/:rid/contractor-delivery", contractor, async (req, res) => {
+    const { quantity } = z.object({ quantity: qty }).parse(req.body);
+    res.json(await recordDelivery(req, ["paid_awaiting_delivery"], "contractor", quantity, 0));
+});
+
+function recordDelivery(req, statuses, source, quantity, spent) {
+    return mongoose.connection.transaction(async (session) => {
+        const done = await MaterialRequest.findOneAndUpdate(
+            { _id: req.params.rid, projectId: req.project._id, status: { $in: statuses } },
+            { status: "fulfilled", source, deliveredQty: quantity, fulfilledAt: new Date() },
+            { returnDocument: "after", session },
+        );
+        if (!done) throw new HttpError(409, "This request is no longer awaiting delivery.");
+        await addToStock(req.project._id, done, quantity, session);
+        if (spent > 0)
+            await LedgerEntry.create([{ projectId: req.project._id, category: "Material", title: `${done.name} ${quantity} ${done.unit}`, date: today(), amount: spent, auto: true }], { session });
+        return done;
+    });
+}
 
 mountPayment(router, {
     Model: MaterialRequest,
     openFilter: { status: "awaiting_payment" },
     amountOf: (r) => r.amount,
     prefix: "mr",
-    onPaid: async (req, r, paymentId) => {
+    onPaid: (_req, r, paymentId) => recordMaterialPayment(r, paymentId),
+});
+
+export function recordMaterialPayment(r, paymentId) {
+    return mongoose.connection.transaction(async (session) => {
         const done = await MaterialRequest.findOneAndUpdate(
             { _id: r._id, status: "awaiting_payment", orderId: r.orderId },
-            { status: "fulfilled", source: "contractor", deliveredQty: r.quantity, paymentId, fulfilledAt: new Date() },
-            { new: true }
+            { status: "paid_awaiting_delivery", source: "contractor", paymentId },
+            { returnDocument: "after", session },
         );
-        if (!done) return null;
-        await addToStock(req.project._id, done, done.quantity);
-        await LedgerEntry.create({ projectId: req.project._id, category: "Material", title: `${done.name} ${done.quantity} ${done.unit} (contractor's through)`, date: today(), amount: done.amount, auto: true });
+        if (!done) return MaterialRequest.findOne({ _id: r._id, paymentId }).session(session);
+        await LedgerEntry.create([{ projectId: r.projectId, category: "Material", title: `${done.name} ${done.quantity} ${done.unit} (arranged by contractor)`, date: today(), amount: done.amount, auto: true }], { session });
         return done;
-    },
-});
+    });
+}
 
 export default router;

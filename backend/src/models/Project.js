@@ -25,6 +25,7 @@ const projectSchema = new mongoose.Schema(
         status: { type: String, enum: ["planned", "in_progress", "completed"], default: "in_progress" },
         progress: { type: Number, default: 0, min: 0, max: 100 },
         budget: { type: Number, required: true, min: 1 },
+        paymentRevision: { type: Number, default: 0, select: false },
         startDate: { type: String, required: true },
         expectedEnd: { type: String, required: true },
         notes: { type: String, default: "" },

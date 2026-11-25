@@ -7,16 +7,17 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import FormDialog from "@/components/ui/FormDialog";
 import { card } from "@/lib/styles";
-import { createMaterialRequest, quoteRequest, cancelRequest, updateMaterialLimits } from "@/services/materialService";
+import { createMaterialRequest, quoteRequest, cancelRequest, updateMaterialLimits, confirmContractorDelivery } from "@/services/materialService";
 import { formatINRFull } from "@/lib/money";
 
-const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment"];
+const OPEN = ["pending", "owner_bringing", "quote_needed", "awaiting_payment", "paid_awaiting_delivery"];
 const units = ["bags", "pcs", "tons", "kg", "litres", "cft"];
 const STATUS = {
     pending: "Awaiting homeowner response",
     owner_bringing: "Homeowner will arrange the material",
     quote_needed: "Homeowner requested contractor arrangement: quote required",
     awaiting_payment: "Quote submitted, awaiting payment",
+    paid_awaiting_delivery: "Test payment confirmed, awaiting delivery",
     fulfilled: "Delivered",
     cancelled: "Cancelled",
 };
@@ -64,20 +65,35 @@ export default function MaterialsTab({ projectId, materials, requests, onChanged
                                     <p className="text-xs">{STATUS[r.status]}{r.note && ` • ${r.note}`}</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    {["quote_needed", "awaiting_payment"].includes(r.status) && (
+                                    {!r.orderId && ["quote_needed", "awaiting_payment"].includes(r.status) && (
                                         <button type="button" className={small} onClick={() => setDialog({ type: "quote", request: r })}>
                                             {r.status === "quote_needed" ? "Submit Quote" : "Update Quote"}
                                         </button>
                                     )}
-                                    <button type="button" className={`${small} hover:text-red-500`}
+                                    {!r.orderId && <button type="button" className={`${small} hover:text-red-500`}
                                         onClick={() => window.confirm("Are you sure you want to cancel this request?") && run(() => cancelRequest(projectId, r.id))}>
                                         Cancel
-                                    </button>
+                                    </button>}
+                                    {r.status === "paid_awaiting_delivery" && (
+                                        <button type="button" className={small} onClick={() => setDialog({ type: "delivery", request: r })}>
+                                            Confirm delivery
+                                        </button>
+                                    )}
                                 </div>
                             </li>
                         ))}
                     </ul>
                 </section>
+            )}
+
+            {dialog?.type === "delivery" && (
+                <FormDialog title={`Confirm ${dialog.request.name} delivery`} submitLabel="Confirm delivery" onClose={close}
+                    initial={{ quantity: dialog.request.quantity }}
+                    fields={[{ name: "quantity", label: `Quantity delivered (${dialog.request.unit})`, type: "number", min: "0.01", step: "any", required: true }]}
+                    onSubmit={async (form) => {
+                        await confirmContractorDelivery(projectId, dialog.request.id, Number(form.quantity));
+                        onChanged();
+                    }} />
             )}
 
             {materials.length === 0 ? (

@@ -58,7 +58,7 @@ export default function PaymentRequests({ projectId, requests, onChanged }) {
                         {r.note && <p className="text-sm">{r.note}</p>}
                         <button type="button" disabled={busyId === r.id} onClick={() => pay(r)}
                             className={`${btn} bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60`}>
-                            {busyId === r.id ? "Please wait..." : `Pay ${formatINRFull(r.amount)}`}
+                            {busyId === r.id ? "Please wait..." : `Test payment · ${formatINRFull(r.amount)}`}
                         </button>
                     </li>
                 ))}

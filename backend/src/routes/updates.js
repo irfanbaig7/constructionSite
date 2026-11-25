@@ -1,13 +1,14 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import { z } from "zod";
 import Material from "../models/Material.js";
 import DailyUpdate from "../models/DailyUpdate.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { loadProject } from "../middleware/project.js";
 import { uploadImages } from "../middleware/upload.js";
-import { saveImage } from "../config/storage.js";
+import { deleteUploadedPhoto, saveImage } from "../config/storage.js";
 import { assertOwnWorkers } from "../utils/workers.js";
-import { consumeStock, restoreStock, presentUpdates } from "../utils/materialFlow.js";
+import { consumeStock, presentUpdates } from "../utils/materialFlow.js";
 import { HttpError } from "../utils/errors.js";
 import { objectId, jsonField } from "../schemas/common.js";
 
@@ -39,10 +40,10 @@ router.post("/", requireRole("contractor"), uploadImages("photos", 6), async (re
     const mats = await Material.find({ _id: { $in: [...usage.keys()] }, projectId: req.project._id });
     if (mats.length !== usage.size) throw new HttpError(400, "Invalid material selected.");
 
-    await consumeStock(req.project._id, usage);
+    const photos = [];
     try {
-        const photos = await Promise.all(req.files.map((f) => saveImage(f.buffer, String(req.project._id))));
-        const update = await DailyUpdate.create({
+        for (const file of req.files) photos.push(await saveImage(file.buffer, req.project.id));
+        const data = {
             projectId: req.project._id,
             ...(at && { at: new Date(at) }),
             summary,
@@ -50,10 +51,16 @@ router.post("/", requireRole("contractor"), uploadImages("photos", 6), async (re
             workerIds: ids,
             workers: ids.length,
             materials: mats.map((m) => `${m.name} ${usage.get(String(m._id))} ${m.unit}`),
+        };
+        const update = await mongoose.connection.transaction(async (session) => {
+            await consumeStock(req.project._id, usage, session);
+            const [created] = await DailyUpdate.create([data], { session });
+            return created;
         });
         res.status(201).json(update);
     } catch (e) {
-        await restoreStock(usage);
+        if (!e.hasErrorLabel?.("UnknownTransactionCommitResult"))
+            await Promise.allSettled(photos.map(deleteUploadedPhoto));
         throw e;
     }
 });

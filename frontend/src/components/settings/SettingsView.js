@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import useSession from "@/hooks/useSession";
 import { logout } from "@/services/authService";
 import { ROUTES } from "@/lib/routes";
+import { notify } from "@/lib/notify";
 import { card } from "@/lib/styles";
 import PageHeader from "@/components/ui/PageHeader";
 import Field from "@/components/ui/Field";
@@ -109,9 +110,13 @@ export default function SettingsView() {
     const router = useRouter();
     const session = useSession();
 
-    function handleLogout() {
-        logout();
-        router.replace(ROUTES.login);
+    async function handleLogout() {
+        try {
+            await logout();
+            router.replace(ROUTES.login);
+        } catch (error) {
+            notify.error(error.message);
+        }
     }
 
     return (

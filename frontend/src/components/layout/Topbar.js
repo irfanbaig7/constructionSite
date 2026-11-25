@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import useSession from "@/hooks/useSession";
 import { logout } from "@/services/authService";
+import { notify } from "@/lib/notify";
 import { ROUTES } from "@/lib/routes";
 import Logo from "@/components/Logo"
 
@@ -31,9 +32,13 @@ export default function Topbar({ onMenuClick, profileHref, homeHref = "/" }) {
         };
     }, [open]);
 
-    function handleLogout() {
-        logout();
-        router.replace(ROUTES.login);
+    async function handleLogout() {
+        try {
+            await logout();
+            router.replace(ROUTES.login);
+        } catch (error) {
+            notify.error(error.message);
+        }
     }
 
     return (

@@ -1,11 +1,12 @@
 
 import { Router } from "express";
+import mongoose from "mongoose";
 import { z } from "zod";
 import Project from "../models/Project.js";
 import Payment from "../models/Payment.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { loadProject, scopeOf } from "../middleware/project.js";
-import { receivedByProject, received } from "../utils/money.js";
+import { receivedByProject, committedPayments } from "../utils/money.js";
 import { today } from "../utils/today.js";
 import { HttpError } from "../utils/errors.js";
 import { text, phone, email, amount, dateStr } from "../schemas/common.js";
@@ -53,14 +54,18 @@ router.get("/", async (req, res) => {
 
 router.post("/", requireRole("contractor"), async (req, res) => {
     const { advance, ...data } = createSchema.parse(req.body);
-    const project = await Project.create({
+    const projectData = {
         ...data,
         contractorId: req.user._id,
         contractor: req.user.name,
         contractorPhone: req.user.phone ?? "",
         milestones: data.milestones.map((name, i) => ({ name, status: i === 0 ? "active" : "pending" })),
-    });
-    if (advance > 0) await Payment.create({ projectId: project._id, label: "Advance", date: today(), amount: advance });
+    };
+    const project = advance > 0 ? await mongoose.connection.transaction(async (session) => {
+        const [created] = await Project.create([projectData], { session });
+        await Payment.create([{ projectId: created._id, label: "Advance", date: today(), amount: advance }], { session });
+        return created;
+    }) : await Project.create(projectData);
     res.status(201).json(project);
 });
 
@@ -70,11 +75,19 @@ router.get("/:id", loadProject(), async (req, res) => {
 });
 
 router.patch("/:id", loadProject("contractor"), async (req, res) => {
-    const p = req.project;
-    p.set(patchSchema.parse(req.body));
-    if (p.budget < (await received(p._id))) throw new HttpError(400, "Budget cannot be less than payments already received.");
-    if (p.expectedEnd <= p.startDate) throw new HttpError(400, "Expected end date must be after the start date.");
-    res.json(await p.save());
+    const patch = patchSchema.parse(req.body);
+    const updated = await mongoose.connection.transaction(async (session) => {
+        const p = await Project.findOneAndUpdate(
+            { _id: req.project._id }, { $inc: { paymentRevision: 1 } }, { session },
+        );
+        if (!p) throw new HttpError(404, "Project not found.");
+        p.set(patch);
+        if (patch.budget !== undefined && Math.round(p.budget * 100) < await committedPayments(p._id, session))
+            throw new HttpError(400, "Budget cannot be less than received payments and outstanding requests.");
+        if (p.expectedEnd <= p.startDate) throw new HttpError(400, "Expected end date must be after the start date.");
+        return p.save({ session });
+    });
+    res.json(updated);
 });
 
 export default router;

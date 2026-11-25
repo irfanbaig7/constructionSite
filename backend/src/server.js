@@ -1,86 +1,48 @@
-import { env } from "./config/env.js";
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import cookieParser from "cookie-parser";
-import rateLimit from "express-rate-limit";
+import http from "node:http";
 import mongoose from "mongoose";
-import { errorHandler } from "./middleware/errorHandler.js";
-import auth from "./routes/auth.js";
-import workers from "./routes/workers.js";
-import projects from "./routes/projects.js";
-import updates from "./routes/updates.js";
-import updateById from "./routes/updateById.js";
-import expenses from "./routes/expenses.js";
-import materials from "./routes/materials.js";
-import materialRequests from "./routes/materialRequests.js";
-import paymentRequests from "./routes/paymentRequests.js";
-import workerPayments from "./routes/workerPayments.js";
-import ledger from "./routes/ledger.js";
-import http from "http";
-import pinoHttp from "pino-http";
-import { initRealtime, notifyProject } from "./realtime.js";
+import app from "./app.js";
+import { env } from "./config/env.js";
+import { closeRealtime, initRealtime } from "./realtime.js";
 
-const app = express();
-app.disable("x-powered-by");
-if (env.NODE_ENV === "production") app.set("trust proxy", 1);
-
-app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
-app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
-app.use(cookieParser());
-app.use(pinoHttp({ level: env.NODE_ENV === "production" ? "info" : "warn" }));
-app.use(express.json({ limit: "100kb" }));
-app.use("/uploads", express.static("uploads"));
-app.use("/api", rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false }));
-
-app.get("/api/health", (_req, res) => res.json({ ok: mongoose.connection.readyState === 1 }));
-
-const routes = {
-    "/auth": auth,
-    "/workers": workers,
-    "/projects": projects,
-    "/projects/:projectId/updates": updates,
-    "/projects/:projectId/expenses": expenses,
-    "/projects/:projectId/materials": materials,
-    "/projects/:projectId/material-requests": materialRequests,
-    "/projects/:projectId/payment-requests": paymentRequests,
-    "/projects/:projectId/worker-payments": workerPayments,
-    "/projects/:projectId/ledger": ledger,
-    "/updates": updateById,
-};
-
-app.use("/api/projects/:projectId", (req, res, next) => {
-    if (req.method !== "GET") res.on("finish", () => res.statusCode < 400 && notifyProject(req.params.projectId));
-    next();
-});
-
-for (const [path, router] of Object.entries(routes)) app.use(`/api${path}`, router);
-
-app.use((_req, res) => res.status(404).json({ message: "Not found." }));
-app.use(errorHandler);
-
-process.on("unhandledRejection", (e) => console.error("Unhandled rejection:", e));
-process.on("uncaughtException", (e) => {
-    console.error("Uncaught exception:", e);
+process.on("unhandledRejection", (error) => console.error("Unhandled rejection:", error?.name));
+process.on("uncaughtException", (error) => {
+    console.error("Uncaught exception:", error.name);
     process.exit(1);
 });
 
 try {
     await mongoose.connect(env.MONGODB_URI, { serverSelectionTimeoutMS: 10_000 });
+    if (env.NODE_ENV === "production") {
+        const topology = await mongoose.connection.db.admin().command({ hello: 1 });
+        if (!topology.setName && topology.msg !== "isdbgrid") {
+            console.error("Production requires a MongoDB replica set or sharded cluster.");
+            process.exit(1);
+        }
+    }
     console.log("MongoDB connected");
-} catch (e) {
-    console.error("DB connection failed:", e.message);
+} catch (error) {
+    console.error("Database startup failed:", error.name);
     process.exit(1);
 }
 
 const server = http.createServer(app);
 initRealtime(server);
-server.listen(env.PORT, () => console.log(`API on http://localhost:${env.PORT}`));
+server.listen(env.PORT, () => console.log(`API listening on port ${env.PORT}`));
 
-async function shutdown() {
-    server.close();
-    await mongoose.disconnect();
-    process.exit(0);
+let stopping = false;
+async function stop() {
+    if (stopping) return;
+    stopping = true;
+    const deadline = setTimeout(() => process.exit(1), 15_000).unref();
+    try {
+        await closeRealtime();
+        await mongoose.disconnect();
+    } catch (error) {
+        console.error("Shutdown failed:", error.name);
+        process.exitCode = 1;
+    } finally {
+        clearTimeout(deadline);
+    }
 }
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+process.on("SIGINT", stop);
+process.on("SIGTERM", stop);

@@ -12,7 +12,7 @@ const requestSchema = new mongoose.Schema(
         minStock: { type: Number, default: 0 },
         status: {
             type: String,
-            enum: ["pending", "owner_bringing", "quote_needed", "awaiting_payment", "fulfilled", "cancelled"],
+            enum: ["pending", "owner_bringing", "quote_needed", "awaiting_payment", "paid_awaiting_delivery", "fulfilled", "cancelled"],
             default: "pending",
         },
         source: { type: String, enum: ["owner", "contractor"] },

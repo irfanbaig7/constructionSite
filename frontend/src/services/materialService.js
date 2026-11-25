@@ -9,6 +9,7 @@ export const updateMaterialLimits = (id, materialId, { target, minStock }) =>
     api(`${base(id)}/materials/${materialId}`, { method: "PUT", body: { target, minStock } });
 export const createMaterialRequest = (id, body) => post(`${base(id)}/material-requests`, body);
 export const quoteRequest = (id, rid, body) => post(`${base(id)}/material-requests/${rid}/quote`, body);
+export const confirmContractorDelivery = (id, rid, quantity) => post(`${base(id)}/material-requests/${rid}/contractor-delivery`, { quantity });
 export const cancelRequest = (id, rid) => post(`${base(id)}/material-requests/${rid}/cancel`, {});
 
 // Both

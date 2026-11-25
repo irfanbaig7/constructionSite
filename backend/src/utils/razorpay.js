@@ -1,11 +1,19 @@
 import crypto from "crypto";
+import { z } from "zod";
 import { env } from "../config/env.js";
 import { HttpError } from "./errors.js";
 import { requireRole } from "../middleware/auth.js";
 
 function credentials() {
     if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) throw new HttpError(503, "Payments abhi set up nahi hain.");
+    if (!env.RAZORPAY_KEY_ID.startsWith("rzp_test_")) throw new HttpError(503, "Only test payments are enabled.");
     return Buffer.from(`${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`).toString("base64");
+}
+
+export function verifyWebhookSignature(raw, signature, secret) {
+    if (!Buffer.isBuffer(raw) || !/^[a-fA-F0-9]{64}$/.test(signature ?? "")) return false;
+    const expected = crypto.createHmac("sha256", secret).update(raw).digest();
+    return crypto.timingSafeEqual(expected, Buffer.from(signature, "hex"));
 }
 
 async function createOrder(rupees, receipt) {
@@ -29,12 +37,39 @@ async function createOrder(rupees, receipt) {
     }
 }
 
-function verifySignature(orderId, { razorpay_order_id, razorpay_payment_id, razorpay_signature } = {}) {
+const checkout = z.object({
+    razorpay_order_id: z.string().regex(/^order_[A-Za-z0-9]{1,64}$/),
+    razorpay_payment_id: z.string().regex(/^pay_[A-Za-z0-9]{1,64}$/),
+    razorpay_signature: z.string().regex(/^[a-fA-F0-9]{64}$/),
+});
+
+function verifySignature(orderId, { razorpay_order_id, razorpay_payment_id, razorpay_signature }) {
     if (!orderId || razorpay_order_id !== orderId) throw new HttpError(400, "Order match nahi hua.");
-    const expected = crypto.createHmac("sha256", env.RAZORPAY_KEY_SECRET ?? "").update(`${razorpay_order_id}|${razorpay_payment_id}`).digest();
-    const given = Buffer.from(String(razorpay_signature ?? ""), "hex");
+    const expected = crypto.createHmac("sha256", env.RAZORPAY_KEY_SECRET).update(`${razorpay_order_id}|${razorpay_payment_id}`).digest();
+    const given = Buffer.from(razorpay_signature, "hex");
     if (given.length !== expected.length || !crypto.timingSafeEqual(expected, given))
         throw new HttpError(400, "Payment verify nahi hua.");
+}
+
+export function assertCapturedPayment(payment, { orderId, paymentId, amount }) {
+    if (payment.id !== paymentId || payment.order_id !== orderId || payment.amount !== amount || payment.currency !== "INR")
+        throw new HttpError(400, "Payment details do not match this request.");
+    if (payment.status !== "captured" || payment.captured !== true || payment.amount_refunded !== 0)
+        throw new HttpError(409, "Payment has not been captured in full.");
+}
+
+export async function fetchPayment(paymentId) {
+    const authorization = credentials();
+    try {
+        const response = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+            signal: AbortSignal.timeout(15_000),
+            headers: { Authorization: `Basic ${authorization}` },
+        });
+        if (!response.ok) throw new Error("Payment lookup failed.");
+        return await response.json();
+    } catch {
+        throw new HttpError(502, "Payment status could not be checked. Please try again.");
+    }
 }
 
 // Adds POST /:rid/pay/order and /:rid/pay/verify to a router that already has req.project.
@@ -48,15 +83,28 @@ export function mountPayment(router, { Model, openFilter, amountOf, prefix, onPa
 
     router.post("/:rid/pay/order", requireRole("homeowner"), async (req, res) => {
         const doc = await open(req);
+        credentials();
+        if (doc.orderId) return res.json({ orderId: doc.orderId, amount: Math.round(amountOf(doc) * 100), currency: "INR", keyId: env.RAZORPAY_KEY_ID });
         const order = await createOrder(amountOf(doc), `${prefix}_${doc.id}`);
-        doc.orderId = order.orderId;
-        await doc.save();
+        const claimed = await Model.updateOne(
+            { _id: doc._id, projectId: req.project._id, ...openFilter, orderId: null, amount: amountOf(doc), updatedAt: doc.updatedAt },
+            { $set: { orderId: order.orderId } },
+        );
+        if (!claimed.matchedCount) throw new HttpError(409, "This request changed. Refresh and try again.");
         res.json(order);
     });
 
     router.post("/:rid/pay/verify", requireRole("homeowner"), async (req, res) => {
-        const doc = await open(req);
-        verifySignature(doc.orderId, req.body);
-        res.json((await onPaid(req, doc, req.body.razorpay_payment_id)) ?? doc);
+        credentials();
+        const body = checkout.parse(req.body);
+        const doc = await Model.findOne({ _id: req.params.rid, projectId: req.project._id, orderId: body.razorpay_order_id });
+        if (!doc) throw new HttpError(409, "This order is no longer available.");
+        verifySignature(doc.orderId, body);
+        if (doc.paymentId === body.razorpay_payment_id) return res.json(doc);
+        const payment = await fetchPayment(body.razorpay_payment_id);
+        assertCapturedPayment(payment, { orderId: doc.orderId, paymentId: body.razorpay_payment_id, amount: Math.round(amountOf(doc) * 100) });
+        const done = await onPaid(req, doc, body.razorpay_payment_id);
+        if (!done) throw new HttpError(409, "This payment request changed. Refresh to check its status.");
+        res.json(done);
     });
 }
