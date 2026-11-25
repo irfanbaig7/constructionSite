@@ -23,5 +23,7 @@ The frontend is a Next.js application. The Express API handles authentication, p
 ## Checks
 
 - API tests from `backend/` with `npm test`.
+- The API journey test starts a temporary MongoDB replica set. The first run downloads the MongoDB binary. The test uses synthetic records and simulated email and payment responses.
 - Frontend lint and production build from `frontend/` with `npm run lint` and `npm run build`.
+- Browser smoke tests from `frontend/` with `npx playwright install chromium` and `npx playwright test` after building. Results and desktop/mobile screenshots are written to `frontend/test-results/`.
 - Dependency advisory checks from each app with `npm audit --omit=dev --audit-level=high`.

@@ -22,7 +22,7 @@ export default function Sidebar({ role, open, onClose }) {
                     }`}
             >
                 <div className="px-2 py-3">
-                    <Logo href={dashboardFor(role)} />
+                    <Logo href={dashboardFor(role)} onClick={onClose} />
                 </div>
 
                 <nav className="mt-4 flex-1 space-y-1">

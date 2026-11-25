@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Field from "@/components/ui/Field";
 import { getWorkers } from "@/services/workerService";
@@ -23,6 +23,17 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
     const [query, setQuery] = useState("");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const previews = useRef(null);
+
+    useEffect(() => {
+        const urls = new Set();
+        previews.current = urls;
+        return () => {
+            for (const url of urls) URL.revokeObjectURL(url);
+            previews.current = null;
+        };
+    }, []);
 
     useEffect(() => {
         Promise.all([getWorkers(), getMaterials(projectId)])
@@ -37,18 +48,31 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
     const setRow = (i, patch) => setUsage((u) => u.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
     async function pick(e) {
+        if (processing) return;
         const files = Array.from(e.target.files).slice(0, MAX_PHOTOS - photos.length);
         e.target.value = "";
+        if (!files.length) return;
+        const urls = previews.current;
+        setProcessing(true);
         try {
             const blobs = await Promise.all(files.map((f) => compressImage(f)));
-            setPhotos((p) => [...p, ...blobs.map((blob) => ({ blob, preview: URL.createObjectURL(blob) }))]);
+            if (previews.current !== urls) return;
+            const additions = blobs.map((blob) => {
+                const preview = URL.createObjectURL(blob);
+                urls.add(preview);
+                return { blob, preview };
+            });
+            setPhotos((p) => [...p, ...additions]);
         } catch {
             setError("Could not read one of the photos.");
+        } finally {
+            if (previews.current === urls) setProcessing(false);
         }
     }
 
     async function submit(e) {
         e.preventDefault();
+        if (processing || busy) return;
         setError("");
         if (photos.length === 0) return setError("Add at least 1 photo as proof.");
         if (selected.length === 0) return setError("Select at least 1 worker who was present.");
@@ -102,7 +126,11 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={p.preview} alt={`Photo ${i + 1}`} className="h-20 w-20 rounded-lg object-cover" />
                                 <button type="button" aria-label="Remove photo"
-                                    onClick={() => setPhotos((list) => list.filter((_, j) => j !== i))}
+                                    onClick={() => {
+                                        URL.revokeObjectURL(p.preview);
+                                        previews.current?.delete(p.preview);
+                                        setPhotos((list) => list.filter((photo) => photo.preview !== p.preview));
+                                    }}
                                     className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
                                     ✕
                                 </button>
@@ -112,7 +140,7 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
                             <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/30 text-xs hover:border-orange-500 light:border-slate-400">
                                 <span className="text-2xl">📷</span>
                                 Add
-                                <input type="file" accept="image/*" multiple onChange={pick} className="hidden" />
+                                <input type="file" accept="image/*" multiple disabled={processing || busy} onChange={pick} className="hidden" />
                             </label>
                         )}
                     </div>
@@ -164,8 +192,8 @@ export default function DailyUpdateDialog({ projectId, onClose, onSaved }) {
                 </div>
 
                 <div className="flex gap-3">
-                    <button type="submit" disabled={busy} className="rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
-                        {busy ? "Uploading..." : "Post update"}
+                    <button type="submit" disabled={busy || processing} className="rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
+                        {busy ? "Uploading..." : processing ? "Preparing photos..." : "Post update"}
                     </button>
                     <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold hover:border-orange-500 light:border-slate-300">
                         Cancel

@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import Material from "../models/Material.js";
 import MaterialRequest from "../models/MaterialRequest.js";
+import Project from "../models/Project.js";
 import LedgerEntry from "../models/LedgerEntry.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { loadProject } from "../middleware/project.js";
@@ -47,12 +48,16 @@ router.post("/", contractor, async (req, res) => {
         })
         .parse(req.body);
     const projectId = req.project._id;
-    const [existing, clash] = await Promise.all([
-        Material.findOne({ projectId, name: b.name }).collation(CI),
-        MaterialRequest.findOne({ projectId, name: b.name, status: { $in: OPEN } }).collation(CI),
-    ]);
-    if (clash) throw new HttpError(409, "A request for this material is already open.");
-    res.status(201).json(await MaterialRequest.create({ ...b, projectId, unit: existing?.unit ?? b.unit }));
+    const request = await mongoose.connection.transaction(async (session) => {
+        const lock = await Project.updateOne({ _id: projectId }, { $inc: { materialRequestRevision: 1 } }, { session });
+        if (!lock.matchedCount) throw new HttpError(404, "Project not found.");
+        const clash = await MaterialRequest.exists({ projectId, name: b.name, status: { $in: OPEN } }).collation(CI).session(session);
+        if (clash) throw new HttpError(409, "A request for this material is already open.");
+        const existing = await Material.findOne({ projectId, name: b.name }).collation(CI).session(session);
+        const [created] = await MaterialRequest.create([{ ...b, projectId, unit: existing?.unit ?? b.unit }], { session });
+        return created;
+    });
+    res.status(201).json(request);
 });
 
 router.post("/:rid/cancel", contractor, async (req, res) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
     Building2, CalendarDays, Camera, CheckCircle2, Clock3, IndianRupee,
@@ -45,7 +46,7 @@ function SectionTitle({ eyebrow, title, note }) {
     );
 }
 
-function View({ b, homeownerName }) {
+function View({ b }) {
     const qc = useQueryClient();
     const refresh = () => qc.invalidateQueries();
     if (!b.d) return <EmptyState text="Project not found." />;
@@ -60,19 +61,12 @@ function View({ b, homeownerName }) {
     const phone = (p.contractorPhone ?? "").replace(/\D/g, "");
     const latest = updates[0];
     const paymentActions = b.pr.filter((r) => r.status === "pending").length;
-    const materialActions = b.r.filter((r) => OPEN_MATERIAL.includes(r.status)).length;
+    const materialActions = b.r.filter((r) => r.status !== "quote_needed" && OPEN_MATERIAL.includes(r.status)).length;
     const actionCount = paymentActions + materialActions;
+    const hasOpenRequests = b.pr.some((r) => r.status === "pending")
+        || b.r.some((r) => r.status === "paid_awaiting_delivery" || OPEN_MATERIAL.includes(r.status));
 
-    return (
-        <div className="space-y-10 pb-8">
-            <header>
-                <div>
-                    <p className="text-sm text-white/60 light:text-slate-600">Welcome back{homeownerName ? `, ${homeownerName.split(" ")[0]}` : ""}</p>
-                    <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Your project, at a glance</h1>
-                    <p className="mt-2 text-sm text-white/60 light:text-slate-600">See what changed, what needs you, and where the budget stands.</p>
-                </div>
-            </header>
-
+    const summary = (
             <section className="overflow-hidden rounded-3xl border border-orange-500/25 bg-gradient-to-br from-orange-500/15 via-white/5 to-blue-500/10 p-5 shadow-2xl shadow-black/10 light:from-orange-50 light:via-white light:to-blue-50 sm:p-7">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
@@ -104,7 +98,10 @@ function View({ b, homeownerName }) {
                     <Metric icon={Camera} label="Latest proof" value={latest ? formatUpdateTime(latest.at) : "Not posted"} note={latest ? `${latest.photos.length} site photos` : "Waiting for first update"} />
                 </div>
             </section>
+    );
 
+    return (
+        <div className="space-y-10 pb-8">
             <section id="updates" className="scroll-mt-24 space-y-4">
                 <SectionTitle eyebrow="Latest from site" title="See what happened at your site" note="Daily progress, people on site, and photo proof—even when you cannot be there in person." />
                 {updates.length === 0 ? <EmptyState text="No work updates have been posted yet." /> : (
@@ -127,7 +124,7 @@ function View({ b, homeownerName }) {
                     <SectionTitle eyebrow="Action centre" title={actionCount ? `${actionCount} item${actionCount === 1 ? "" : "s"} need your attention` : "You're all caught up"} note="Payments and material decisions that are waiting for you." />
                     {actionCount > 0 && <span className="w-fit rounded-full bg-orange-500/15 px-3 py-1.5 text-sm font-semibold text-orange-500">{actionCount} open</span>}
                 </div>
-                {actionCount === 0 ? (
+                {!hasOpenRequests ? (
                     <div className={`flex items-center gap-3 rounded-2xl p-5 ${card}`}><CheckCircle2 className="text-green-500" size={24} aria-hidden /><div><p className="font-semibold">No pending approvals or payments</p><p className="text-sm text-white/60 light:text-slate-600">The next request will appear here.</p></div></div>
                 ) : (
                     <div className="grid gap-4 lg:grid-cols-2"><PaymentRequests projectId={p.id} requests={b.pr} onChanged={refresh} /><MaterialRequests projectId={p.id} requests={b.r} onChanged={refresh} /></div>
@@ -159,6 +156,7 @@ function View({ b, homeownerName }) {
                     <div><p className="text-sm text-white/60 light:text-slate-600">Total cash outflow</p><p className="mt-1 font-semibold">{formatINR(received + ownerExpenses)}</p></div>
                 </div>
             </section>
+            {summary}
         </div>
     );
 }
@@ -166,7 +164,8 @@ function View({ b, homeownerName }) {
 export default function HomeDashboard() {
     const session = useSession();
     const projects = useProjects();
-    const selectedId = projects.data?.[0]?.id;
+    const [choice, setChoice] = useState(null);
+    const selectedId = projects.data?.some((project) => project.id === choice) ? choice : projects.data?.[0]?.id;
     const bundle = useOwnerBundle(selectedId);
 
     if (!session) return <p className="py-12 text-center text-sm">Loading your dashboard…</p>;
@@ -174,7 +173,24 @@ export default function HomeDashboard() {
         <DataState query={projects}>{(list) => list.length === 0 ? (
             <EmptyState text={`No projects are linked to your email (${session.email}). Ask your contractor to use this email when creating the project.`} />
         ) : (
-            <DataState query={bundle}>{(b) => <View b={b} homeownerName={session.name} />}</DataState>
+            <div className="space-y-8">
+                <header>
+                    <p className="text-sm text-white/60 light:text-slate-600">Welcome back, {session.name.split(" ")[0]}</p>
+                    <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Your project, at a glance</h1>
+                    <p className="mt-2 text-sm text-white/60 light:text-slate-600">See what changed, what needs you, and where the budget stands.</p>
+                    {list.length > 1 && (
+                        <label className="mt-4 block max-w-sm text-sm font-semibold">
+                            Viewing project
+                            <select value={selectedId} onChange={(event) => setChoice(event.target.value)}
+                                className="mt-1 block min-h-11 w-full rounded-xl border border-white/15 bg-[#151b29] px-3 light:border-slate-300 light:bg-white">
+                                {list.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+                            </select>
+                        </label>
+                    )}
+                </header>
+                <DataState query={bundle}>{(b) => <View b={b} />}</DataState>
+            </div>
+
         )}</DataState>
     );
 }

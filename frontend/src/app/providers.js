@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, MutationCache } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { notify } from "@/lib/notify";
+import { getSession, subscribeSession } from "@/lib/session";
 
 export default function Providers({ children }) {
     const [client] = useState(
@@ -19,6 +20,15 @@ export default function Providers({ children }) {
                 }),
             })
     );
+
+    useEffect(() => {
+        let userId = getSession()?.id;
+        return subscribeSession(() => {
+            const nextId = getSession()?.id;
+            if (userId !== nextId) client.clear();
+            userId = nextId;
+        });
+    }, [client]);
 
     return (
         <QueryClientProvider client={client}>
