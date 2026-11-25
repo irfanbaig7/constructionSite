@@ -26,7 +26,7 @@ export function initRealtime(server) {
         const { user, id, expiresAt } = s.data.session;
         s.join(`user:${user.id}`);
         s.join(`session:${id}`);
-        if (user.role === "homeowner" && user.emailVerifiedAt)
+        if (user.role === "homeowner")
             s.join(`email:${user.email}`);
         const expiry = setTimeout(() => s.disconnect(true), Math.max(0, expiresAt - Date.now()));
         s.once("disconnect", () => clearTimeout(expiry));

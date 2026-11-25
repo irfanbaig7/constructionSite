@@ -13,7 +13,6 @@ const { requireRequestOrigin } = await import("../src/middleware/requestOrigin.j
 const { scopeOf } = await import("../src/middleware/project.js");
 const { authenticateSession } = await import("../src/middleware/auth.js");
 const { assertCapturedPayment, verifyWebhookSignature } = await import("../src/utils/razorpay.js");
-const { tokenHash, newAccountToken } = await import("../src/utils/accountEmail.js");
 const { productionConfigErrors } = await import("../src/config/env.js");
 const { default: app } = await import("../src/app.js");
 
@@ -37,18 +36,17 @@ test("API rejects anonymous project and photo requests, forged webhooks and cros
 test("production requires HTTPS, provider settings and Razorpay test mode", () => {
     const config = {
         NODE_ENV: "production", CLIENT_ORIGIN: "https://app.example.test", PUBLIC_API_URL: "https://api.example.test",
-        RESEND_API_KEY: "set", AUTH_EMAIL_FROM: "set", CLOUDINARY_CLOUD_NAME: "set", CLOUDINARY_API_KEY: "set",
+        CLOUDINARY_CLOUD_NAME: "set", CLOUDINARY_API_KEY: "set",
         CLOUDINARY_API_SECRET: "set", RAZORPAY_KEY_ID: "rzp_test_example", RAZORPAY_KEY_SECRET: "set",
         RAZORPAY_WEBHOOK_SECRET: "set",
     };
     assert.deepEqual(productionConfigErrors(config), []);
     assert.deepEqual(productionConfigErrors({ ...config, RAZORPAY_KEY_ID: "rzp_live_example" }), ["RAZORPAY_KEY_ID must be a test-mode key"]);
-    assert.ok(productionConfigErrors({ ...config, PUBLIC_API_URL: "http://localhost:5000/api", RESEND_API_KEY: "" }).length === 2);
+    assert.ok(productionConfigErrors({ ...config, PUBLIC_API_URL: "http://localhost:5000/api", CLOUDINARY_API_KEY: "" }).length === 2);
 });
 
-test("project queries deny unverified homeowners and isolate each role", () => {
-    assert.deepEqual(scopeOf({ role: "homeowner", email: "owner@example.test" }), { ownerEmail: { $in: [] } });
-    assert.deepEqual(scopeOf({ role: "homeowner", email: "owner@example.test", emailVerifiedAt: new Date() }), { ownerEmail: "owner@example.test" });
+test("project queries match homeowner email and scope contractors by account", () => {
+    assert.deepEqual(scopeOf({ role: "homeowner", email: "owner@example.test" }), { ownerEmail: "owner@example.test" });
     assert.deepEqual(scopeOf({ role: "contractor", _id: "contractorA" }), { contractorId: "contractorA" });
 });
 
@@ -71,14 +69,6 @@ test("state-changing HTTP routes require the configured website origin", async (
     assert.equal((await fetch(url, { method: "POST" })).status, 403);
     assert.equal((await fetch(url, { method: "POST", headers: { Origin: "https://other.example.test" } })).status, 403);
     assert.equal((await fetch(url, { method: "POST", headers: { Origin: origin } })).status, 204);
-});
-
-test("email tokens are random and only their digest is persisted", () => {
-    const token = newAccountToken();
-    assert.match(token, /^[a-f0-9]{64}$/);
-    assert.notEqual(token, newAccountToken());
-    assert.notEqual(token, tokenHash(token));
-    assert.equal(tokenHash(token), tokenHash(token));
 });
 
 test("capture requires a matching order, exact INR paise and the full captured amount", () => {

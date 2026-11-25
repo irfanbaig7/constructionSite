@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { notify } from "@/lib/notify";
 import FormField from "./FormField";
 import { login } from "@/services/authService";
@@ -34,7 +33,6 @@ export default function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
             <FormField label="Email" name="email" type="email" value={form.email} onChange={update} placeholder="you@example.com" autoComplete="email" />
             <FormField label="Password" name="password" type="password" value={form.password} onChange={update} placeholder="Your password" autoComplete="current-password" />
-            <Link href="/account-access" className="inline-block text-sm underline">Forgot password?</Link>
             <button type="submit" disabled={loading} className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
                 {loading ? "Logging in..." : "Login →"}
             </button>

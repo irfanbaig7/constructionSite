@@ -12,8 +12,6 @@ const schema = z.object({
     RAZORPAY_KEY_ID: z.string().optional(),
     RAZORPAY_KEY_SECRET: z.string().optional(),
     RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
-    RESEND_API_KEY: z.string().optional(),
-    AUTH_EMAIL_FROM: z.string().optional(),
     CLOUDINARY_CLOUD_NAME: z.string().optional(),
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),
@@ -22,7 +20,7 @@ const schema = z.object({
 export function productionConfigErrors(config) {
     if (config.NODE_ENV !== "production") return [];
     const required = [
-        "PUBLIC_API_URL", "RESEND_API_KEY", "AUTH_EMAIL_FROM", "CLOUDINARY_CLOUD_NAME",
+        "PUBLIC_API_URL", "CLOUDINARY_CLOUD_NAME",
         "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET",
         "RAZORPAY_WEBHOOK_SECRET",
     ];

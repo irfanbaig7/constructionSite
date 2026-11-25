@@ -4,7 +4,7 @@ import { HttpError } from "../utils/errors.js";
 
 export const scopeOf = (user) =>
     user.role === "contractor" ? { contractorId: user._id }
-        : { ownerEmail: user.emailVerifiedAt ? user.email : { $in: [] } };
+        : { ownerEmail: user.email };
 
 // Loads the project the user is allowed to see into req.project. Optionally restricts to one role.
 export function loadProject(only) {

@@ -19,7 +19,7 @@ for (const width of widths) {
         await page.goto("/");
         for (const theme of ["dark", "light"]) {
             await page.evaluate((value) => localStorage.setItem("theme", value), theme);
-            for (const [route, heading] of [["/", /build smart/i], ["/login", /welcome back/i], ["/signup", /create your account/i], ["/account-access", /reset password/i]]) {
+            for (const [route, heading] of [["/", /build smart/i], ["/login", /welcome back/i], ["/signup", /create your account/i]]) {
                 await page.goto(route);
                 await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible();
                 if (theme === "light") await expect(page.locator("html")).toHaveClass(/\blight\b/);
@@ -35,7 +35,7 @@ for (const width of widths) {
 
 for (const role of ["contractor", "homeowner"]) {
     test(`${role} dashboard and logo route on mobile and desktop`, async ({ page }, info) => {
-        const user = { id: "fixture", role, name: "Demo User", email: "demo@example.test", emailVerified: true };
+        const user = { id: "fixture", role, name: "Demo User", email: "demo@example.test" };
         const secondProject = { ...project, id: "fixture-two", name: "Second Demo House" };
         const pageErrors = [];
         page.on("pageerror", (error) => pageErrors.push(error.message));

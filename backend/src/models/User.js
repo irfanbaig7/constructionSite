@@ -9,11 +9,6 @@ const userSchema = new mongoose.Schema(
         role: { type: String, enum: ["contractor", "homeowner"], required: true },
         phone: { type: String, trim: true },
         tokenVersion: { type: Number, default: 0 },
-        emailVerifiedAt: Date,
-        verificationTokenHash: { type: String, sparse: true, unique: true, select: false },
-        verificationExpiresAt: { type: Date, select: false },
-        resetTokenHash: { type: String, sparse: true, unique: true, select: false },
-        resetExpiresAt: { type: Date, select: false },
     },
     { timestamps: true }
 );

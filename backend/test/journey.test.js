@@ -28,7 +28,6 @@ test("contractor and homeowner release journey", { timeout: 600_000 }, async (t)
     Object.assign(process.env, {
         NODE_ENV: "test", MONGODB_URI: database.getUri(), CLIENT_ORIGIN: origin,
         JWT_SECRET: "fixture-secret-unused-by-any-real-environment",
-        RESEND_API_KEY: "fixture", AUTH_EMAIL_FROM: "siteproof@example.test",
         RAZORPAY_KEY_ID: "rzp_test_fixture", RAZORPAY_KEY_SECRET: paymentSecret,
         RAZORPAY_WEBHOOK_SECRET: webhookSecret,
         CLOUDINARY_CLOUD_NAME: "", CLOUDINARY_API_KEY: "", CLOUDINARY_API_SECRET: "",
@@ -43,17 +42,9 @@ test("contractor and homeowner release journey", { timeout: 600_000 }, async (t)
     const base = `http://127.0.0.1:${server.address().port}`;
 
     const browserFetch = globalThis.fetch;
-    const emailTokens = new Map();
     const orders = new Map();
     const captures = new Map();
     t.mock.method(globalThis, "fetch", async (url, options) => {
-        if (url === "https://api.resend.com/emails") {
-            const message = JSON.parse(options.body);
-            const link = new URL(message.text.match(/https?:\/\/\S+/)[0]);
-            const fields = new URLSearchParams(link.hash.slice(1));
-            emailTokens.set(fields.get("action"), fields.get("token"));
-            return Response.json({ id: "email_fixture" });
-        }
         if (url === "https://api.razorpay.com/v1/orders") {
             const { amount, currency } = JSON.parse(options.body);
             const order = { id: `order_fixture${orders.size + 1}`, amount, currency };
@@ -93,12 +84,11 @@ test("contractor and homeowner release journey", { timeout: 600_000 }, async (t)
         location: "Demo location", budget: 1000, advance: 100, startDate: "2026-01-01", expectedEnd: "2026-12-01",
     }, 201);
     const projectPath = `/api/projects/${project.id}`;
-    assert.deepEqual((await get("/api/projects", owner)).data, []);
-    await get(projectPath, owner, 404);
+    const { cookie: unrelatedOwner } = await signup("Other Homeowner", "other-owner@example.test", "homeowner");
+    assert.deepEqual((await get("/api/projects", owner)).data.map(({ id }) => id), [project.id]);
+    assert.deepEqual((await get("/api/projects", unrelatedOwner)).data, []);
+    await get(projectPath, unrelatedOwner, 404);
     await get(projectPath, other, 404);
-    await post("/api/auth/send-verification", owner);
-    await post("/api/auth/verify-email", null, { token: emailTokens.get("verify") });
-    await post("/api/auth/verify-email", null, { token: emailTokens.get("verify") }, 400);
     await get(projectPath, owner);
     await get(`${projectPath}/expenses`, owner, 403);
     await get(`${projectPath}/worker-payments`, owner, 403);
@@ -183,9 +173,10 @@ test("contractor and homeowner release journey", { timeout: 600_000 }, async (t)
     assert.equal((await get(`${projectPath}/materials`, contractor)).data.find(({ name }) => name === "Steel").stock, 4);
     assert.deepEqual((await get(`${projectPath}/ledger`, owner)).data.map((entry) => entry.amount).sort((a, b) => a - b), [70, 250]);
 
-    await post("/api/auth/forgot-password", null, { email: "owner@example.test" });
-    await post("/api/auth/reset-password", null, { token: emailTokens.get("reset"), password: "AReplacement123" });
+    const { cookie: changed } = await call("/api/auth/password", { method: "POST", cookie: owner,
+        body: { current: "FixturePass123", next: "AReplacement123" } });
     await get("/api/auth/me", owner, 401);
+    await get("/api/auth/me", changed);
     const { cookie: fresh } = await post("/api/auth/login", null, { email: "owner@example.test", password: "AReplacement123" });
     await post("/api/auth/logout", fresh);
     await get("/api/auth/me", fresh, 401);
