@@ -19,7 +19,7 @@ export async function api(path, { method = "GET", body } = {}) {
         res = await fetch(`${BASE}${path}`, {
             method,
             credentials: "include",
-            signal: AbortSignal.timeout(isForm ? 120_000 : 30_000),
+            signal: AbortSignal.timeout(isForm || BASE === "/api" ? 120_000 : 30_000),
             headers: body && !isForm ? { "Content-Type": "application/json" } : undefined,
             body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
         });

@@ -20,6 +20,10 @@ The frontend is a Next.js application. The Express API handles authentication, p
 5. Set a Razorpay test key pair and configure `payment.captured` for `https://<api-host>/api/webhooks/razorpay`. Set `RAZORPAY_WEBHOOK_SECRET` to the corresponding Test Mode webhook secret. Use automatic capture and verify checkout both with the browser open and with the browser closed after paying.
 6. Check `GET /api/health` and test authentication, uploads, realtime reconnect, payment verification and delivery with two synthetic accounts. Run the release gate in [the release checklist](docs/release-readiness.md) before publishing.
 
+### Render staging without a custom domain
+
+On the frontend service, set `API_PROXY_TARGET` to the backend HTTPS origin and `NEXT_PUBLIC_API_URL=/api` before building. Browser requests for API, private photos and Socket.IO go through the frontend origin. On the backend service, set both `CLIENT_ORIGIN` and `PUBLIC_API_URL` to the actual frontend HTTPS origin so login and newly uploaded photo URLs use the same site. Register the Razorpay test webhook against the backend service URL.
+
 ## Checks
 
 - API tests from `backend/` with `npm test`.
