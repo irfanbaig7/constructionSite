@@ -11,6 +11,7 @@ export default function LoginForm() {
     const router = useRouter();
     const [form, setForm] = useState({ email: "", password: "" });
     const [loading, setLoading] = useState(false);
+    const [connecting, setConnecting] = useState(false);
 
     const update = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.name === "email" ? e.target.value.replace(/\s/g, "") : e.target.value }));
 
@@ -18,13 +19,13 @@ export default function LoginForm() {
         e.preventDefault();
         setLoading(true);
         try {
-            const user = await login(form);
+            const user = await login(form, () => setConnecting(true));
             setForm({ email: "", password: "" });
             router.push(dashboardFor(user.role));
         } catch (err) {
-            console.log("LOGIN ERROR:", err.message);
             notify.error(err.message);
         } finally {
+            setConnecting(false);
             setLoading(false);
         }
     }
@@ -36,6 +37,11 @@ export default function LoginForm() {
             <button type="submit" disabled={loading} className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
                 {loading ? "Logging in..." : "Login →"}
             </button>
+            {connecting && (
+                <p role="status" className="text-center text-sm">
+                    SiteProof is starting up. We’ll retry your sign-in automatically.
+                </p>
+            )}
         </form>
     );
 }

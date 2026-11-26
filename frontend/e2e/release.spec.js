@@ -33,6 +33,44 @@ for (const width of widths) {
     });
 }
 
+test("login waits for the backend and retries after a gateway error", async ({ page }) => {
+    const user = { id: "fixture", role: "contractor", name: "Demo User", email: "demo@example.test" };
+    let loginAttempts = 0;
+    let healthChecks = 0;
+    await page.route("**/api/**", (route) => {
+        const path = new URL(route.request().url()).pathname;
+        if (path === "/api/auth/login" && ++loginAttempts === 1)
+            return route.fulfill({ status: 502, contentType: "text/html", body: "Starting up" });
+        if (path === "/api/health") {
+            const ready = ++healthChecks > 1;
+            return route.fulfill({ status: ready ? 200 : 503, json: { ok: ready } });
+        }
+        return route.fulfill({ json: path.startsWith("/api/auth/") ? { user } : [] });
+    });
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(user.email);
+    await page.getByLabel("Password", { exact: true }).fill("FixturePass123");
+    await page.getByRole("button", { name: /login/i }).click();
+    await expect(page.getByRole("status")).toContainText("SiteProof is starting up");
+    await expect(page).toHaveURL(/\/contractor\/dashboard$/);
+    expect(loginAttempts).toBe(2);
+    expect(healthChecks).toBe(2);
+});
+
+test("login shows incorrect credentials without starting recovery", async ({ page }) => {
+    let apiCalls = 0;
+    await page.route("**/api/**", (route) => {
+        apiCalls++;
+        return route.fulfill({ status: 401, json: { message: "Incorrect email or password." } });
+    });
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("demo@example.test");
+    await page.getByLabel("Password", { exact: true }).fill("FixturePass123");
+    await page.getByRole("button", { name: /login/i }).click();
+    await expect(page.getByText("Incorrect email or password.")).toBeVisible();
+    expect(apiCalls).toBe(1);
+});
+
 for (const role of ["contractor", "homeowner"]) {
     test(`${role} dashboard and logo route on mobile and desktop`, async ({ page }, info) => {
         const user = { id: "fixture", role, name: "Demo User", email: "demo@example.test" };

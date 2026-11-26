@@ -9,7 +9,10 @@ import { ORIGIN } from "@/lib/api";
 export default function Realtime() {
     const qc = useQueryClient();
     useEffect(() => {
-        const socket = io(ORIGIN || undefined, { withCredentials: true });
+        const socket = io(ORIGIN || undefined, {
+            withCredentials: true,
+            addTrailingSlash: Boolean(ORIGIN),
+        });
         socket.on("changed", () => qc.invalidateQueries());
         return () => {
             socket.close();

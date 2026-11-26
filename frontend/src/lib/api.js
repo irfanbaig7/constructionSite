@@ -12,14 +12,14 @@ export class ApiError extends Error {
     }
 }
 
-export async function api(path, { method = "GET", body } = {}) {
+export async function api(path, { method = "GET", body, timeoutMs } = {}) {
     const isForm = body instanceof FormData;
     let res;
     try {
         res = await fetch(`${BASE}${path}`, {
             method,
             credentials: "include",
-            signal: AbortSignal.timeout(isForm || BASE === "/api" ? 120_000 : 30_000),
+            signal: AbortSignal.timeout(timeoutMs ?? (isForm || BASE === "/api" ? 120_000 : 30_000)),
             headers: body && !isForm ? { "Content-Type": "application/json" } : undefined,
             body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
         });
